@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useGameStore } from "@/game/state/gameStore";
 import { TitleScreen } from "./title/TitleScreen";
 import { ControlsHint } from "./ControlsHint";
-import { DialogueBox } from "./DialogueBox";
+import { DialogueBox } from "./dialogue/DialogueBox";
 import { InteractionPrompt } from "./InteractionPrompt";
 import { MemoryOverlay } from "./MemoryOverlay";
 

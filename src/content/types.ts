@@ -28,15 +28,48 @@ export interface Zone {
   bounds: ZoneBounds;
 }
 
+// ── Diálogos ─────────────────────────────────────────────────────────────
+// Um diálogo é um pequeno grafo de nós. Cada nó tem uma sequência de falas e,
+// ao final, escolhas, um próximo nó ou o encerramento.
+//
+//   start ─► nó { falas... } ─► escolhas ─► nó ...
+//                             └► next ────► nó ...
+//                             └► (nada) ──► fim
+
+/** Quem fala: um personagem ou o narrador (descrições curtas de ação, sem nome). */
+export type Speaker = CharacterId | "narrator";
+
 export interface DialogueLine {
-  speaker: CharacterId;
+  speaker: Speaker;
   text: string;
-  /** Nesta fala o personagem se apresenta: a partir daqui o nome aparece no lugar do epíteto. */
-  introduces?: CharacterId;
+  /** Nesta fala alguém se apresenta: a partir daqui o nome aparece no lugar do epíteto. */
+  introduces?: CharacterId | readonly CharacterId[];
+}
+
+export interface DialogueChoice {
+  /** O que a Aysha diz/decide. */
+  text: string;
+  /** Nó seguinte; sem `next` a escolha encerra o diálogo. */
+  next?: string;
+}
+
+export interface DialogueNode {
+  lines: readonly DialogueLine[];
+  /** Mostradas depois da última fala do nó. */
+  choices?: readonly DialogueChoice[];
+  /** Sem escolhas: segue para este nó; sem `next`, o diálogo termina. */
+  next?: string;
 }
 
 export interface Dialogue {
-  lines: readonly DialogueLine[];
+  start: string;
+  nodes: Readonly<Record<string, DialogueNode>>;
+  /**
+   * Trava o movimento enquanto o diálogo está aberto (padrão: `true`).
+   * Com `false` as falas avançam sozinhas e o jogador continua andando
+   * (comentários de fundo); nesse caso não pode haver escolhas.
+   */
+  blocksMovement?: boolean;
 }
 
 /** Um NPC no mundo: onde está e o que tem a dizer. */

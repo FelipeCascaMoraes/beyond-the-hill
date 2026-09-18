@@ -3,17 +3,25 @@ import {
   dialogues,
   type CharacterId,
   type DialogueId,
-  type DialogueLine,
   type EndingChoice,
   type MemoryId,
   type ZoneId,
 } from "@/content";
+import {
+  advanceCursor,
+  beginDialogue,
+  chooseOption,
+  currentStep,
+  introducedBy,
+  type DialogueCursor,
+} from "@/game/dialogue/runner";
 
 export type GamePhase = "title" | "playing" | "ending";
 
-interface ActiveDialogue {
+/** Diálogo aberto e o ponto em que está. */
+export interface ActiveDialogue {
   id: DialogueId;
-  lineIndex: number;
+  cursor: DialogueCursor;
 }
 
 /** Interativo sob a mira/perto do jogador, para o prompt "[ E ] ...". */
@@ -44,7 +52,9 @@ interface GameActions {
   setControlEnabled: (enabled: boolean) => void;
   setInteractionFocus: (focus: InteractionFocus | null) => void;
   startDialogue: (id: DialogueId) => void;
+  /** Próxima fala (ou encerra). Diante de escolhas, não faz nada. */
   advanceDialogue: () => void;
+  chooseDialogueOption: (index: number) => void;
   recoverMemory: (id: MemoryId) => void;
   closeMemory: () => void;
   chooseEnding: (choice: EndingChoice) => void;
@@ -63,11 +73,23 @@ const initialState: GameState = {
   endingChoice: null,
 };
 
-const addUnique = <T,>(list: readonly T[], item: T): readonly T[] => (list.includes(item) ? list : [...list, item]);
+const addUnique = <T,>(list: readonly T[], ...items: readonly T[]): readonly T[] => {
+  const missing = items.filter((item) => !list.includes(item));
+  return missing.length ? [...list, ...missing] : list;
+};
 
-/** Quando uma fala apresenta alguém, o nome passa a ser conhecido. */
-function learnFromLine(known: readonly CharacterId[], line: DialogueLine): readonly CharacterId[] {
-  return line.introduces ? addUnique(known, line.introduces) : known;
+type DialogueSlice = Pick<GameState, "activeDialogue" | "seenDialogues" | "knownCharacters">;
+
+/**
+ * Aplica um novo cursor: `null` encerra (marca a conversa como vista);
+ * caso contrário, aprende nomes apresentados na nova fala.
+ */
+function moveDialogue(state: DialogueSlice, id: DialogueId, cursor: DialogueCursor | null): Partial<GameState> {
+  if (!cursor) return { activeDialogue: null, seenDialogues: addUnique(state.seenDialogues, id) };
+  return {
+    activeDialogue: { id, cursor },
+    knownCharacters: addUnique(state.knownCharacters, ...introducedBy(currentStep(dialogues[id], cursor))),
+  };
 }
 
 /**
@@ -86,24 +108,22 @@ export const useGameStore = create<GameState & GameActions>()((set) => ({
 
   setInteractionFocus: (focus) => set({ interactionFocus: focus }),
 
-  startDialogue: (id) =>
-    set(({ knownCharacters }) => ({
-      activeDialogue: { id, lineIndex: 0 },
-      knownCharacters: learnFromLine(knownCharacters, dialogues[id].lines[0]),
-    })),
+  startDialogue: (id) => set((state) => moveDialogue(state, id, beginDialogue(dialogues[id]))),
 
   advanceDialogue: () =>
-    set(({ activeDialogue, seenDialogues, knownCharacters }) => {
-      if (!activeDialogue) return {};
-      const { lines } = dialogues[activeDialogue.id];
-      const next = activeDialogue.lineIndex + 1;
-      if (next >= lines.length) {
-        return { activeDialogue: null, seenDialogues: addUnique(seenDialogues, activeDialogue.id) };
-      }
-      return {
-        activeDialogue: { ...activeDialogue, lineIndex: next },
-        knownCharacters: learnFromLine(knownCharacters, lines[next]),
-      };
+    set((state) => {
+      if (!state.activeDialogue) return {};
+      const { id, cursor } = state.activeDialogue;
+      const next = advanceCursor(dialogues[id], cursor);
+      return next === cursor ? {} : moveDialogue(state, id, next);
+    }),
+
+  chooseDialogueOption: (index) =>
+    set((state) => {
+      if (!state.activeDialogue) return {};
+      const { id, cursor } = state.activeDialogue;
+      const next = chooseOption(dialogues[id], cursor, index);
+      return next === cursor ? {} : moveDialogue(state, id, next);
     }),
 
   recoverMemory: (id) =>
@@ -117,9 +137,17 @@ export const useGameStore = create<GameState & GameActions>()((set) => ({
   chooseEnding: (choice) => set({ endingChoice: choice, phase: "ending" }),
 }));
 
+/** O diálogo aberto trava o movimento? (padrão: sim) */
+export const selectDialogueBlocksMovement = (state: GameState): boolean =>
+  state.activeDialogue !== null && dialogues[state.activeDialogue.id].blocksMovement !== false;
+
 /**
- * O jogador pode andar, olhar e interagir agora? Falso durante a abertura
- * e enquanto um diálogo ou uma memória está aberto.
+ * O jogador pode andar e olhar agora? Falso durante a abertura, com memória
+ * aberta e durante diálogos que travam o movimento.
  */
 export const selectCanControl = (state: GameState): boolean =>
-  state.controlEnabled && state.activeDialogue === null && state.activeMemory === null;
+  state.controlEnabled && state.activeMemory === null && !selectDialogueBlocksMovement(state);
+
+/** Pode iniciar uma interação? Além de controlar, não pode haver diálogo aberto. */
+export const selectCanInteract = (state: GameState): boolean =>
+  selectCanControl(state) && state.activeDialogue === null;

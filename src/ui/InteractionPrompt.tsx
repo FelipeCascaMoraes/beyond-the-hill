@@ -2,18 +2,19 @@
 
 import { useSyncExternalStore } from "react";
 import { isPointerLocked, subscribePointerLock } from "@/game/input/input";
-import { selectCanControl, useGameStore } from "@/game/state/gameStore";
+import { selectCanControl, selectCanInteract, useGameStore } from "@/game/state/gameStore";
 
 const shadow = "[text-shadow:0_1px_10px_rgba(0,0,0,0.6)]";
 
 /** Mira discreta no centro e o prompt "[ E ] …" quando há algo para interagir. */
 export function InteractionPrompt() {
   const canControl = useGameStore(selectCanControl);
+  const canInteract = useGameStore(selectCanInteract);
   const focus = useGameStore((state) => state.interactionFocus);
   const locked = useSyncExternalStore(subscribePointerLock, isPointerLocked, () => false);
 
   const showReticle = canControl && locked;
-  const showPrompt = canControl && focus !== null;
+  const showPrompt = canInteract && focus !== null;
 
   return (
     <>

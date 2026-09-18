@@ -46,6 +46,12 @@ body {
   50% { opacity: 0.9; }
 }
 
+/* Abertura da caixa de diálogo. */
+@keyframes dialogue-box-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Entrada de cada fala do diálogo. */
 @keyframes dialogue-in {
   from { opacity: 0; transform: translateY(4px); }

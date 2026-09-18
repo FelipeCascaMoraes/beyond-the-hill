@@ -6,7 +6,7 @@ import { installDefaultInteractionHandlers } from "@/game/interaction/defaultHan
 import { findFocus } from "@/game/interaction/focus";
 import { getInteractables } from "@/game/interaction/registry";
 import { consumeInteract } from "@/game/input/input";
-import { selectCanControl, useGameStore } from "@/game/state/gameStore";
+import { selectCanInteract, useGameStore } from "@/game/state/gameStore";
 
 const viewDirection = new Vector3();
 
@@ -24,7 +24,7 @@ export function InteractionSystem() {
     const currentId = state.interactionFocus?.id ?? null;
 
     let focus = null;
-    if (selectCanControl(state)) {
+    if (selectCanInteract(state)) {
       camera.getWorldDirection(viewDirection);
       focus = findFocus(getInteractables(), { position: camera.position, direction: viewDirection }, currentId);
     }
