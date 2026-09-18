@@ -2,19 +2,32 @@ import type { NpcDefinition } from "./types";
 
 // NPCs do mundo. Cassandra e Victor esperam juntos na trilha, alguns passos à
 // frente de onde a Aysha desperta: visíveis logo na primeira cena.
+// As conversas sobre a colina só abrem depois que a Aysha se pergunta por que
+// ela parece familiar (marco "hill-familiar").
+
+const afterHillFeelsFamiliar = { flags: ["hill-familiar"] } as const;
 
 export const npcs = {
   cassandra: {
     zone: "arrival",
     position: [-2.4, -13],
     restLookAt: [0, 0],
-    conversation: ["arrival-meeting", "cassandra-hill", "cassandra-idle"],
+    conversation: [
+      "arrival-meeting",
+      { dialogue: "cassandra-hill", requires: afterHillFeelsFamiliar },
+      "cassandra-idle",
+    ],
   },
   victor: {
     zone: "arrival",
     position: [-0.6, -14.6],
     restLookAt: [0, 0],
-    conversation: ["arrival-meeting", "victor-machines", "victor-idle"],
+    conversation: [
+      "arrival-meeting",
+      "victor-machines",
+      { dialogue: "victor-hill", requires: afterHillFeelsFamiliar },
+      "victor-idle",
+    ],
   },
 } as const satisfies Record<string, NpcDefinition>;
 

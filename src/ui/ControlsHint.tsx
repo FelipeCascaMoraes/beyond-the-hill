@@ -2,13 +2,13 @@
 
 import { useSyncExternalStore } from "react";
 import { isPointerLocked, subscribePointerLock } from "@/game/input/input";
-import { selectCanControl, useGameStore } from "@/game/state/gameStore";
+import { selectCanInteract, useGameStore } from "@/game/state/gameStore";
 
 /** Dica discreta de controles; some enquanto o mouse está travado na cena ou há diálogo/memória aberta. */
 export function ControlsHint() {
-  const canControl = useGameStore(selectCanControl);
+  const canInteract = useGameStore(selectCanInteract);
   const locked = useSyncExternalStore(subscribePointerLock, isPointerLocked, () => false);
-  const visible = canControl && !locked;
+  const visible = canInteract && !locked;
 
   return (
     <div

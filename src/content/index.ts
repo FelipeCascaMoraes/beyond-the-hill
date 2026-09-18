@@ -4,3 +4,5 @@ export * from "./zones";
 export * from "./dialogues";
 export * from "./memories";
 export * from "./npcs";
+export * from "./story";
+export * from "./pointsOfInterest";

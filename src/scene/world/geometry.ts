@@ -73,10 +73,35 @@ interface GrassOptions {
   centerX: number;
   centerZ: number;
   seed: number;
+  /** Áreas de grama baixa (em volta de pontos de interesse), para que se destaquem. */
+  clearings?: readonly GrassClearing[];
+}
+
+export interface GrassClearing {
+  x: number;
+  z: number;
+  radius: number;
+}
+
+/** 1 fora das clareiras; cai suavemente até ~0.15 no centro delas. */
+function clearingFactor(x: number, z: number, clearings: readonly GrassClearing[]): number {
+  let factor = 1;
+  for (const clearing of clearings) {
+    const distance = Math.hypot(x - clearing.x, z - clearing.z);
+    factor = Math.min(factor, 0.15 + 0.85 * smoothstep(clearing.radius * 0.4, clearing.radius, distance));
+  }
+  return factor;
 }
 
 /** Uma folha (9 vértices, 7 triângulos) instanciada `count` vezes. */
-export function createGrassGeometry({ count, radius, centerX, centerZ, seed }: GrassOptions): InstancedBufferGeometry {
+export function createGrassGeometry({
+  count,
+  radius,
+  centerX,
+  centerZ,
+  seed,
+  clearings = [],
+}: GrassOptions): InstancedBufferGeometry {
   const positions: number[] = [];
   const indices: number[] = [];
   for (let i = 0; i < BLADE_SEGMENTS; i++) {
@@ -118,7 +143,8 @@ export function createGrassGeometry({ count, radius, centerX, centerZ, seed }: G
     const trodden = 0.2 + 0.8 * smoothstep(0.3, 1.5, distanceToTrail(x, z));
 
     params[i * 4] = random() * Math.PI * 2;
-    params[i * 4 + 1] = (0.3 + random() * 0.5) * clumps * (0.25 + 0.75 * edge) * trodden;
+    params[i * 4 + 1] =
+      (0.3 + random() * 0.5) * clumps * (0.25 + 0.75 * edge) * trodden * clearingFactor(x, z, clearings);
     // Folhas distantes mais largas para cobrir o chão com menos instâncias.
     params[i * 4 + 2] = (0.05 + random() * 0.05) * (1 + distanceFactor * 1.8);
     params[i * 4 + 3] = random();

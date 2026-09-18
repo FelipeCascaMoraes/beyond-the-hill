@@ -33,7 +33,7 @@ export function Npc({ id }: { id: NpcId }) {
   const bodyRef = useRef<Group>(null);
 
   const label = useCharacterLabel(id);
-  const dialogue = useGameStore((state) => nextConversation(npc.conversation, state.seenDialogues));
+  const dialogue = useGameStore((state) => nextConversation(npc.conversation, state));
 
   const restYaw = useMemo(
     () => Math.atan2(npc.restLookAt[0] - x, npc.restLookAt[1] - z),

@@ -1,4 +1,4 @@
-import { npcs, zones, type NpcId, type ZoneId } from "@/content";
+import { npcs, pointsOfInterest, zones, type NpcId, type PointOfInterest, type ZoneId } from "@/content";
 import { playerConfig } from "@/game/config/player";
 import { terrainHeight } from "@/game/world/terrain";
 import { lookAngles, type CircleObstacle, type PlayerEnvironment, type SpawnPose } from "./playerController";
@@ -17,9 +17,16 @@ export function getSpawnPose(zoneId: ZoneId): SpawnPose {
 
 export function getPlayerEnvironment(zoneId: ZoneId): PlayerEnvironment {
   const { center, radius } = zones[zoneId].bounds;
-  const obstacles: CircleObstacle[] = (Object.keys(npcs) as NpcId[])
+  const npcObstacles: CircleObstacle[] = (Object.keys(npcs) as NpcId[])
     .filter((id) => npcs[id].zone === zoneId)
     .map((id) => ({ x: npcs[id].position[0], z: npcs[id].position[1], radius: NPC_RADIUS }));
+
+  // Pontos de interesse sólidos (pedras) também bloqueiam a passagem.
+  const poiObstacles: CircleObstacle[] = Object.values<PointOfInterest>(pointsOfInterest)
+    .filter((poi) => poi.zone === zoneId && poi.obstacleRadius !== undefined)
+    .map((poi) => ({ x: poi.position[0], z: poi.position[1], radius: poi.obstacleRadius ?? 0 }));
+
+  const obstacles = [...npcObstacles, ...poiObstacles];
 
   return {
     heightAt: terrainHeight,

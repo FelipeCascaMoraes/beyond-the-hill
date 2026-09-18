@@ -5,6 +5,7 @@ import {
   type DialogueId,
   type EndingChoice,
   type MemoryId,
+  type StoryFlag,
   type ZoneId,
 } from "@/content";
 import {
@@ -41,6 +42,8 @@ interface GameState {
   seenDialogues: readonly DialogueId[];
   /** Personagens cujo nome a Aysha já conhece. */
   knownCharacters: readonly CharacterId[];
+  /** Marcos da história já alcançados. */
+  flags: readonly StoryFlag[];
   activeMemory: MemoryId | null;
   recoveredMemories: readonly MemoryId[];
   endingChoice: EndingChoice | null;
@@ -68,6 +71,7 @@ const initialState: GameState = {
   activeDialogue: null,
   seenDialogues: [],
   knownCharacters: ["aysha"],
+  flags: [],
   activeMemory: null,
   recoveredMemories: [],
   endingChoice: null,
@@ -78,14 +82,20 @@ const addUnique = <T,>(list: readonly T[], ...items: readonly T[]): readonly T[]
   return missing.length ? [...list, ...missing] : list;
 };
 
-type DialogueSlice = Pick<GameState, "activeDialogue" | "seenDialogues" | "knownCharacters">;
+type DialogueSlice = Pick<GameState, "activeDialogue" | "seenDialogues" | "knownCharacters" | "flags">;
 
 /**
- * Aplica um novo cursor: `null` encerra (marca a conversa como vista);
- * caso contrário, aprende nomes apresentados na nova fala.
+ * Aplica um novo cursor: `null` encerra (marca a conversa como vista e
+ * registra seus marcos); caso contrário, aprende nomes apresentados na nova fala.
  */
 function moveDialogue(state: DialogueSlice, id: DialogueId, cursor: DialogueCursor | null): Partial<GameState> {
-  if (!cursor) return { activeDialogue: null, seenDialogues: addUnique(state.seenDialogues, id) };
+  if (!cursor) {
+    return {
+      activeDialogue: null,
+      seenDialogues: addUnique(state.seenDialogues, id),
+      flags: addUnique(state.flags, ...(dialogues[id].setsFlags ?? [])),
+    };
+  }
   return {
     activeDialogue: { id, cursor },
     knownCharacters: addUnique(state.knownCharacters, ...introducedBy(currentStep(dialogues[id], cursor))),

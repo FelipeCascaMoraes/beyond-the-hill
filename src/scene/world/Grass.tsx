@@ -3,7 +3,7 @@ import { useFrame } from "@react-three/fiber";
 import { Color, DoubleSide, ShaderMaterial, UniformsLib, UniformsUtils, Vector2, Vector3 } from "three";
 import { atmosphere } from "@/game/config/render";
 import { grassFragmentShader, grassVertexShader } from "../shaders/grass";
-import { createGrassGeometry } from "./geometry";
+import { createGrassGeometry, type GrassClearing } from "./geometry";
 
 interface GrassProps {
   count: number;
@@ -11,15 +11,19 @@ interface GrassProps {
   centerX?: number;
   centerZ?: number;
   seed?: number;
+  /** Deve ser uma referência estável (a geometria é refeita se mudar). */
+  clearings?: readonly GrassClearing[];
 }
 
+const NO_CLEARINGS: readonly GrassClearing[] = [];
+
 /** Campo de grama: todas as folhas em um único draw call. */
-export function Grass({ count, radius, centerX = 0, centerZ = 0, seed = 7 }: GrassProps) {
+export function Grass({ count, radius, centerX = 0, centerZ = 0, seed = 7, clearings = NO_CLEARINGS }: GrassProps) {
   const materialRef = useRef<ShaderMaterial>(null);
 
   const geometry = useMemo(
-    () => createGrassGeometry({ count, radius, centerX, centerZ, seed }),
-    [count, radius, centerX, centerZ, seed],
+    () => createGrassGeometry({ count, radius, centerX, centerZ, seed, clearings }),
+    [count, radius, centerX, centerZ, seed, clearings],
   );
   useEffect(() => () => geometry.dispose(), [geometry]);
 

@@ -1,6 +1,7 @@
 // Tipos dos dados narrativos. Nada aqui depende de React ou Three.js.
 import type { CharacterId } from "./characters";
 import type { DialogueId } from "./dialogues";
+import type { StoryFlag } from "./story";
 import type { ZoneId } from "./zones";
 
 export type Vec3 = readonly [number, number, number];
@@ -70,7 +71,31 @@ export interface Dialogue {
    * (comentários de fundo); nesse caso não pode haver escolhas.
    */
   blocksMovement?: boolean;
+  /** Marcos da história registrados quando o diálogo termina. */
+  setsFlags?: readonly StoryFlag[];
 }
+
+// ── Progressão narrativa ─────────────────────────────────────────────────
+
+/** Condição narrativa. Todas as partes presentes precisam ser verdadeiras. */
+export interface Requirement {
+  /** Marcos que já precisam ter acontecido. */
+  flags?: readonly StoryFlag[];
+  /** Pelo menos `count` destes diálogos já concluídos. */
+  seenAtLeast?: { dialogues: readonly DialogueId[]; count: number };
+}
+
+/** Momento que o jogo dispara sozinho, uma única vez, quando o jogador está livre. */
+export interface StoryBeat {
+  zone: ZoneId;
+  dialogue: DialogueId;
+  requires: Requirement;
+  /** Espera (s) depois que as condições se cumprem, para não ser abrupto. */
+  delay: number;
+}
+
+/** Entrada da conversa de um NPC: sempre disponível, ou só com uma condição. */
+export type ConversationEntry = DialogueId | { dialogue: DialogueId; requires: Requirement };
 
 /** Um NPC no mundo: onde está e o que tem a dizer. */
 export interface NpcDefinition {
@@ -80,10 +105,24 @@ export interface NpcDefinition {
   /** Para onde olha quando a Aysha está longe. */
   restLookAt: readonly [number, number];
   /**
-   * Conversas em ordem: cada interação toca a próxima ainda não vista;
-   * a última se repete.
+   * Conversas em ordem: cada interação toca a próxima ainda não vista e
+   * disponível; quando não há mais, repete a última disponível.
    */
-  conversation: readonly DialogueId[];
+  conversation: readonly ConversationEntry[];
+}
+
+/** Algo no campo que a Aysha pode examinar. */
+export interface PointOfInterest {
+  zone: ZoneId;
+  /** Aparência (definida em scene/poi). */
+  kind: "horseshoe" | "fence" | "cairn" | "flowers" | "boulder";
+  position: readonly [number, number];
+  /** Texto do prompt: "[ E ] {prompt}". */
+  prompt: string;
+  /** Pensamento da Aysha ao examinar. */
+  dialogue: DialogueId;
+  /** Se bloqueia a passagem, o raio (m). */
+  obstacleRadius?: number;
 }
 
 export interface Memory {
