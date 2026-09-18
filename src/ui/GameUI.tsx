@@ -5,6 +5,7 @@ import { useGameStore } from "@/game/state/gameStore";
 import { TitleScreen } from "./title/TitleScreen";
 import { ControlsHint } from "./ControlsHint";
 import { DialogueBox } from "./DialogueBox";
+import { InteractionPrompt } from "./InteractionPrompt";
 import { MemoryOverlay } from "./MemoryOverlay";
 
 /** Camada HTML sobre o canvas. Não bloqueia o mouse, exceto nos próprios elementos. */
@@ -18,6 +19,7 @@ export function GameUI() {
       {phase === "playing" && (
         <>
           <ControlsHint />
+          <InteractionPrompt />
           <DialogueBox />
           <MemoryOverlay />
         </>

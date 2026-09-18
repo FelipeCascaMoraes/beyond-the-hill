@@ -6,6 +6,7 @@ import { atmosphere, cameraIntro, renderConfig } from "@/game/config/render";
 import { getQualitySettings } from "@/game/config/quality";
 import { useGameStore } from "@/game/state/gameStore";
 import { CameraRig } from "./camera/CameraRig";
+import { InteractionSystem } from "./interaction/InteractionSystem";
 import { PlayerController } from "./player/PlayerController";
 import { World } from "./world/World";
 import { ZoneRenderer } from "./zones/ZoneRenderer";
@@ -31,6 +32,8 @@ export default function Experience() {
       <color attach="background" args={[atmosphere.horizonColor]} />
       <CameraRig />
       <PlayerController />
+      {/* Depois do jogador: usa a câmera já atualizada no mesmo frame. */}
+      <InteractionSystem />
       <Suspense fallback={null}>
         <World />
         <ZoneRenderer />

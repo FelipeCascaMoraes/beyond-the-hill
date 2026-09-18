@@ -4,7 +4,7 @@ import { playerConfig } from "@/game/config/player";
 import { attachInput, consumeLook, readMovement } from "@/game/input/input";
 import { createPlayerState, headBobOffset, updatePlayer, type PlayerState } from "@/game/player/playerController";
 import { getPlayerEnvironment, getSpawnPose } from "@/game/player/spawn";
-import { useGameStore } from "@/game/state/gameStore";
+import { selectCanControl, useGameStore } from "@/game/state/gameStore";
 import { prefersReducedMotion } from "@/lib/motion";
 
 /** Evita saltos de posição depois de trocar de aba ou travadas longas. */
@@ -13,10 +13,13 @@ const MAX_FRAME_TIME = 0.1;
 /**
  * Aysha em 1ª pessoa: liga entrada → lógica pura → câmera.
  * Só assume a câmera quando `controlEnabled` fica verdadeiro (fim da abertura).
+ * Com diálogo ou memória aberta a entrada é desligada (e o mouse destravado);
+ * a simulação continua sem entrada, então a Aysha desacelera até parar.
  */
 export function PlayerController() {
   const zone = useGameStore((state) => state.zone);
   const controlEnabled = useGameStore((state) => state.controlEnabled);
+  const canControl = useGameStore(selectCanControl);
   const canvas = useThree((state) => state.gl.domElement);
   const playerRef = useRef<PlayerState | null>(null);
   const headBob = useMemo(() => !prefersReducedMotion(), []);
@@ -28,9 +31,9 @@ export function PlayerController() {
   }, [zone]);
 
   useEffect(() => {
-    if (!controlEnabled) return;
+    if (!canControl) return;
     return attachInput(canvas);
-  }, [controlEnabled, canvas]);
+  }, [canControl, canvas]);
 
   useFrame(({ camera }, delta) => {
     const player = playerRef.current;

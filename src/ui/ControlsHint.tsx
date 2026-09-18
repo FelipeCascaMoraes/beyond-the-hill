@@ -2,13 +2,13 @@
 
 import { useSyncExternalStore } from "react";
 import { isPointerLocked, subscribePointerLock } from "@/game/input/input";
-import { useGameStore } from "@/game/state/gameStore";
+import { selectCanControl, useGameStore } from "@/game/state/gameStore";
 
-/** Dica discreta de controles; some enquanto o mouse está travado na cena. */
+/** Dica discreta de controles; some enquanto o mouse está travado na cena ou há diálogo/memória aberta. */
 export function ControlsHint() {
-  const controlEnabled = useGameStore((state) => state.controlEnabled);
+  const canControl = useGameStore(selectCanControl);
   const locked = useSyncExternalStore(subscribePointerLock, isPointerLocked, () => false);
-  const visible = controlEnabled && !locked;
+  const visible = canControl && !locked;
 
   return (
     <div
@@ -21,7 +21,7 @@ export function ControlsHint() {
         Clique para olhar ao redor
       </p>
       <p className="text-[0.7rem] tracking-[0.3em] text-stone-200/70 uppercase [text-shadow:0_1px_8px_rgba(0,0,0,0.6)]">
-        W A S D caminhar · Esc soltar o mouse
+        W A S D caminhar · E interagir · Esc soltar o mouse
       </p>
     </div>
   );

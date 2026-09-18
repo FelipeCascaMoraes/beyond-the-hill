@@ -7,6 +7,7 @@ const BACKWARD = ["KeyS", "ArrowDown"];
 const LEFT = ["KeyA", "ArrowLeft"];
 const RIGHT = ["KeyD", "ArrowRight"];
 const MOVEMENT_KEYS = new Set([...FORWARD, ...BACKWARD, ...LEFT, ...RIGHT]);
+const INTERACT_KEYS = new Set(["KeyE"]);
 
 /** Alguns navegadores entregam saltos enormes de movimento ao travar o mouse. */
 const MAX_MOUSE_DELTA = 150;
@@ -15,12 +16,18 @@ const pressed = new Set<string>();
 const lockListeners = new Set<() => void>();
 let lookDeltaX = 0;
 let lookDeltaY = 0;
+let interactPressed = false;
 let lockTarget: HTMLElement | null = null;
 
 const clampDelta = (value: number) => Math.max(-MAX_MOUSE_DELTA, Math.min(MAX_MOUSE_DELTA, value));
 const axis = (keys: string[]) => (keys.some((key) => pressed.has(key)) ? 1 : 0);
 
 function onKeyDown(event: KeyboardEvent) {
+  if (INTERACT_KEYS.has(event.code)) {
+    // Um toque = uma interação (segurar a tecla não repete).
+    if (!event.repeat) interactPressed = true;
+    return;
+  }
   if (!MOVEMENT_KEYS.has(event.code)) return;
   pressed.add(event.code);
   event.preventDefault();
@@ -74,6 +81,7 @@ export function attachInput(element: HTMLElement): () => void {
     releaseAllKeys();
     lookDeltaX = 0;
     lookDeltaY = 0;
+    interactPressed = false;
     lockTarget = null;
     lockListeners.forEach((listener) => listener());
   };
@@ -92,6 +100,13 @@ export function consumeLook(): { x: number; y: number } {
   lookDeltaX = 0;
   lookDeltaY = 0;
   return delta;
+}
+
+/** Verdadeiro uma única vez por toque na tecla de interação (E). */
+export function consumeInteract(): boolean {
+  const pressedNow = interactPressed;
+  interactPressed = false;
+  return pressedNow;
 }
 
 export function isPointerLocked(): boolean {

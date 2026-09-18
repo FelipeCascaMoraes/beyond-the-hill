@@ -1,6 +1,9 @@
 import { getQualitySettings } from "@/game/config/quality";
+import { DevInteractionProbe } from "../interaction/DevInteractionProbe";
 import { Grass } from "../world/Grass";
 import { Motes } from "../world/Motes";
+
+const isDevelopment = process.env.NODE_ENV === "development";
 
 /** Campo onde Aysha desperta no Além: grama alta, silêncio e luz suspensa no ar. */
 export function ArrivalZone() {
@@ -9,6 +12,7 @@ export function ArrivalZone() {
     <>
       <Grass count={quality.grassBlades} radius={quality.grassRadius} centerZ={4} />
       <Motes count={quality.motes} />
+      {isDevelopment && <DevInteractionProbe />}
     </>
   );
 }
