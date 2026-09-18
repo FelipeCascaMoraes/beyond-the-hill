@@ -3,7 +3,7 @@ import type { StoryBeat } from "./types";
 // Progressão narrativa: marcos da história e momentos que acontecem sozinhos.
 
 /** Marcos da história, ligados ao fim de diálogos (`setsFlags`). */
-export const storyFlags = ["met-guides", "hill-familiar"] as const;
+export const storyFlags = ["met-guides", "hill-familiar", "first-memory"] as const;
 export type StoryFlag = (typeof storyFlags)[number];
 
 /** Pensamentos dos pontos de interesse do campo de chegada. */

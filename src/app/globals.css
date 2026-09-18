@@ -46,6 +46,12 @@ body {
   50% { opacity: 0.9; }
 }
 
+/* Cada fragmento de memória surge de um desfoque, como algo que volta aos poucos. */
+@keyframes memory-fragment-in {
+  from { opacity: 0; filter: blur(6px); transform: translateY(6px); }
+  to { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+
 /* Abertura da caixa de diálogo. */
 @keyframes dialogue-box-in {
   from { opacity: 0; transform: translateY(10px); }

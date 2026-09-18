@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import {
   dialogues,
+  memories,
   type CharacterId,
   type DialogueId,
   type EndingChoice,
@@ -16,6 +17,7 @@ import {
   introducedBy,
   type DialogueCursor,
 } from "@/game/dialogue/runner";
+import { canActivate, isLastFragment, memoryStatus, type MemoryStatus } from "@/game/memory/memoryLogic";
 
 export type GamePhase = "title" | "playing" | "ending";
 
@@ -23,6 +25,12 @@ export type GamePhase = "title" | "playing" | "ending";
 export interface ActiveDialogue {
   id: DialogueId;
   cursor: DialogueCursor;
+}
+
+/** Memória em andamento. */
+export interface ActiveMemory {
+  id: MemoryId;
+  fragment: number;
 }
 
 /** Interativo sob a mira/perto do jogador, para o prompt "[ E ] ...". */
@@ -44,7 +52,9 @@ interface GameState {
   knownCharacters: readonly CharacterId[];
   /** Marcos da história já alcançados. */
   flags: readonly StoryFlag[];
-  activeMemory: MemoryId | null;
+  /** Memória sendo vivida agora e o fragmento em tela. */
+  activeMemory: ActiveMemory | null;
+  /** Memórias já vividas até o fim. */
   recoveredMemories: readonly MemoryId[];
   endingChoice: EndingChoice | null;
 }
@@ -58,8 +68,15 @@ interface GameActions {
   /** Próxima fala (ou encerra). Diante de escolhas, não faz nada. */
   advanceDialogue: () => void;
   chooseDialogueOption: (index: number) => void;
-  recoverMemory: (id: MemoryId) => void;
-  closeMemory: () => void;
+  /**
+   * Entra em uma memória (trava o controle). Recusa se estiver bloqueada ou
+   * se já houver memória ou diálogo em andamento. Retorna se entrou.
+   */
+  activateMemory: (id: MemoryId) => boolean;
+  /** Próximo fragmento; no último não faz nada (a UI encerra após a transição). */
+  advanceMemory: () => void;
+  /** Encerra a memória: registra como recuperada, aplica marcos e devolve o controle. */
+  completeMemory: () => void;
   chooseEnding: (choice: EndingChoice) => void;
 }
 
@@ -107,7 +124,7 @@ function moveDialogue(state: DialogueSlice, id: DialogueId, cursor: DialogueCurs
  * Componentes React assinam com seletores; o loop 3D (useFrame) deve ler
  * via `useGameStore.getState()` para não provocar re-render a cada frame.
  */
-export const useGameStore = create<GameState & GameActions>()((set) => ({
+export const useGameStore = create<GameState & GameActions>()((set, get) => ({
   ...initialState,
 
   startGame: () => set({ ...initialState, phase: "playing" }),
@@ -136,13 +153,29 @@ export const useGameStore = create<GameState & GameActions>()((set) => ({
       return next === cursor ? {} : moveDialogue(state, id, next);
     }),
 
-  recoverMemory: (id) =>
-    set(({ recoveredMemories }) => ({
-      activeMemory: id,
-      recoveredMemories: addUnique(recoveredMemories, id),
-    })),
+  activateMemory: (id) => {
+    const state = get();
+    if (state.activeMemory || state.activeDialogue) return false;
+    if (!canActivate(memoryStatus(id, memories[id], state))) return false;
+    set({ activeMemory: { id, fragment: 0 }, interactionFocus: null });
+    return true;
+  },
 
-  closeMemory: () => set({ activeMemory: null }),
+  advanceMemory: () =>
+    set(({ activeMemory }) => {
+      if (!activeMemory || isLastFragment(memories[activeMemory.id], activeMemory.fragment)) return {};
+      return { activeMemory: { ...activeMemory, fragment: activeMemory.fragment + 1 } };
+    }),
+
+  completeMemory: () =>
+    set(({ activeMemory, recoveredMemories, flags }) => {
+      if (!activeMemory) return {};
+      return {
+        activeMemory: null,
+        recoveredMemories: addUnique(recoveredMemories, activeMemory.id),
+        flags: addUnique(flags, ...(memories[activeMemory.id].setsFlags ?? [])),
+      };
+    }),
 
   chooseEnding: (choice) => set({ endingChoice: choice, phase: "ending" }),
 }));
@@ -157,6 +190,12 @@ export const selectDialogueBlocksMovement = (state: GameState): boolean =>
  */
 export const selectCanControl = (state: GameState): boolean =>
   state.controlEnabled && state.activeMemory === null && !selectDialogueBlocksMovement(state);
+
+/** Estado de uma memória para o progresso atual (bloqueada/desbloqueada/recuperada). */
+export const selectMemoryStatus =
+  (id: MemoryId) =>
+  (state: GameState): MemoryStatus =>
+    memoryStatus(id, memories[id], state);
 
 /** Pode iniciar uma interação? Além de controlar, não pode haver diálogo aberto. */
 export const selectCanInteract = (state: GameState): boolean =>

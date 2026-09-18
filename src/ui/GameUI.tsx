@@ -6,7 +6,7 @@ import { TitleScreen } from "./title/TitleScreen";
 import { ControlsHint } from "./ControlsHint";
 import { DialogueBox } from "./dialogue/DialogueBox";
 import { InteractionPrompt } from "./InteractionPrompt";
-import { MemoryOverlay } from "./MemoryOverlay";
+import { MemoryOverlay } from "./memory/MemoryOverlay";
 
 /** Camada HTML sobre o canvas. Não bloqueia o mouse, exceto nos próprios elementos. */
 export function GameUI() {

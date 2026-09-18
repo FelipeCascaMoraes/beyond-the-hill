@@ -9,7 +9,10 @@ import { registerInteractionHandler } from "./actions";
 export function installDefaultInteractionHandlers(): () => void {
   const removers = [
     registerInteractionHandler("dialogue", (action) => useGameStore.getState().startDialogue(action.dialogue)),
-    registerInteractionHandler("memory", (action) => useGameStore.getState().recoverMemory(action.memory)),
+    // Memórias bloqueadas são recusadas pelo próprio sistema de memórias.
+    registerInteractionHandler("memory", (action) => {
+      useGameStore.getState().activateMemory(action.memory);
+    }),
   ];
   return () => removers.forEach((remove) => remove());
 }

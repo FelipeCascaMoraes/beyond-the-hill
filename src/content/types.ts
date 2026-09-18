@@ -1,6 +1,7 @@
 // Tipos dos dados narrativos. Nada aqui depende de React ou Three.js.
 import type { CharacterId } from "./characters";
 import type { DialogueId } from "./dialogues";
+import type { MemoryId } from "./memories";
 import type { StoryFlag } from "./story";
 import type { ZoneId } from "./zones";
 
@@ -83,6 +84,8 @@ export interface Requirement {
   flags?: readonly StoryFlag[];
   /** Pelo menos `count` destes diálogos já concluídos. */
   seenAtLeast?: { dialogues: readonly DialogueId[]; count: number };
+  /** Memórias que já precisam ter sido recuperadas. */
+  memories?: readonly MemoryId[];
 }
 
 /** Momento que o jogo dispara sozinho, uma única vez, quando o jogador está livre. */
@@ -125,9 +128,35 @@ export interface PointOfInterest {
   obstacleRadius?: number;
 }
 
-export interface Memory {
-  title: string;
+// ── Memórias ─────────────────────────────────────────────────────────────
+// Estado de uma memória (derivado, nunca armazenado à mão):
+//   bloqueada ──(condição `unlock` cumprida)──► desbloqueada ──(vivida)──► recuperada
+
+/** Como a memória é ativada depois de desbloqueada. */
+export type MemoryTrigger =
+  /** Por um objeto interativo com a ação `{ type: "memory" }`. */
+  | { type: "interaction" }
+  /** Sozinha, assim que desbloqueia e o jogador está livre, após `delay` segundos. */
+  | { type: "auto"; delay: number };
+
+/** Um trecho do conteúdo de uma memória, mostrado um de cada vez. */
+export interface MemoryFragment {
   text: string;
+  /** `narration` (padrão): descrição. `voice`: uma fala ouvida na lembrança, sem nome. */
+  kind?: "narration" | "voice";
+}
+
+export interface Memory {
+  /** Nome curto, mostrado ao entrar na lembrança. */
+  title: string;
+  /** Resumo para listas futuras (diário de memórias); não aparece durante a lembrança. */
+  description: string;
+  /** Condição para desbloquear. Sem condição: desbloqueada desde o início. */
+  unlock?: Requirement;
+  trigger: MemoryTrigger;
+  fragments: readonly MemoryFragment[];
+  /** Marcos da história registrados ao terminar a memória. */
+  setsFlags?: readonly StoryFlag[];
 }
 
 export type EndingChoice = "forgive" | "revenge";

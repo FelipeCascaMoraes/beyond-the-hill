@@ -12,7 +12,7 @@ const conversation: readonly ConversationEntry[] = [
   "cassandra-idle",
 ];
 
-const context = (seenDialogues: DialogueId[], flags: ("met-guides" | "hill-familiar")[] = []) => ({ seenDialogues, flags });
+const context = (seenDialogues: DialogueId[], flags: ("met-guides" | "hill-familiar")[] = []) => ({ seenDialogues, flags, recoveredMemories: [] });
 
 test("começa pela primeira conversa", () => {
   assert.equal(nextConversation(conversation, context([])), "arrival-meeting");
