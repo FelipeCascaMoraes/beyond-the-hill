@@ -8,7 +8,7 @@ export function ArrivalZone() {
   return (
     <>
       <Grass count={quality.grassBlades} radius={quality.grassRadius} centerZ={4} />
-      <Motes count={quality.motes} centerZ={4} />
+      <Motes count={quality.motes} />
     </>
   );
 }

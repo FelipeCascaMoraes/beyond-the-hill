@@ -105,23 +105,20 @@ export function createGrassGeometry({ count, radius, centerX, centerZ, seed }: G
 
 interface MotesOptions {
   count: number;
-  radius: number;
+  /** Meia-largura do volume quadrado (o shader o repete em volta da câmera). */
+  range: number;
   height: number;
-  centerX: number;
-  centerZ: number;
   seed: number;
 }
 
-export function createMotesGeometry({ count, radius, height, centerX, centerZ, seed }: MotesOptions): BufferGeometry {
+export function createMotesGeometry({ count, range, height, seed }: MotesOptions): BufferGeometry {
   const random = createRandom(seed);
   const positions = new Float32Array(count * 3);
   const seeds = new Float32Array(count);
   for (let i = 0; i < count; i++) {
-    const r = radius * Math.sqrt(random());
-    const angle = random() * Math.PI * 2;
-    positions[i * 3] = centerX + Math.cos(angle) * r;
+    positions[i * 3] = (random() * 2 - 1) * range;
     positions[i * 3 + 1] = random() * height;
-    positions[i * 3 + 2] = centerZ + Math.sin(angle) * r;
+    positions[i * 3 + 2] = (random() * 2 - 1) * range;
     seeds[i] = random();
   }
   const geometry = new BufferGeometry();

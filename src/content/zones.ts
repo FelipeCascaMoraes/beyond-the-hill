@@ -1,12 +1,25 @@
 import type { Zone } from "./types";
 
+// Valores provisórios nas zonas ainda não construídas.
+const placeholder = {
+  playerSpawn: [0, 0, 0],
+  spawnLookAt: [0, 0, -10],
+  bounds: { center: [0, 0], radius: 30 },
+} as const;
+
 /** Zonas na ordem em que a jornada acontece. */
 export const zones = {
-  arrival: { title: "O Além", playerSpawn: [0, 0, 0] },
-  houses: { title: "As Casas Abandonadas", playerSpawn: [0, 0, 0] },
-  labyrinth: { title: "O Labirinto", playerSpawn: [0, 0, 0] },
-  hillside: { title: "A Colina", playerSpawn: [0, 0, 0] },
-  refuge: { title: "O Refúgio", playerSpawn: [0, 0, 0] },
+  arrival: {
+    title: "O Além",
+    playerSpawn: [0, 0, 0],
+    // Olhar voltado para a colina no horizonte.
+    spawnLookAt: [20, 55, -380],
+    bounds: { center: [0, 4], radius: 38 },
+  },
+  houses: { title: "As Casas Abandonadas", ...placeholder },
+  labyrinth: { title: "O Labirinto", ...placeholder },
+  hillside: { title: "A Colina", ...placeholder },
+  refuge: { title: "O Refúgio", ...placeholder },
 } as const satisfies Record<string, Zone>;
 
 export type ZoneId = keyof typeof zones;

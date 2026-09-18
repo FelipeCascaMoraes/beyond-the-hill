@@ -1,32 +1,30 @@
 import { useEffect, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import gsap from "gsap";
-import { Vector2, Vector3 } from "three";
+import { Vector3 } from "three";
 import { cameraIntro } from "@/game/config/render";
+import { getSpawnPose } from "@/game/player/spawn";
 import { useGameStore } from "@/game/state/gameStore";
 import { terrainHeight } from "@/game/world/terrain";
 import { prefersReducedMotion } from "@/lib/motion";
 
-/** Poses da câmera com altura relativa ao chão sob ela. */
+/** Pontos com altura relativa ao chão sob eles. */
 function aboveGround([x, y, z]: readonly [number, number, number]): Vector3 {
   return new Vector3(x, y + terrainHeight(x, z), z);
 }
 
 const fromPosition = aboveGround(cameraIntro.from.position);
-const toPosition = aboveGround(cameraIntro.to.position);
-const fromTarget = new Vector3(...cameraIntro.from.target);
-const toTarget = aboveGround(cameraIntro.to.target);
+const fromTarget = aboveGround(cameraIntro.from.target);
+const toPosition = new Vector3();
+const toTarget = new Vector3();
 const lookTarget = new Vector3();
-const smoothedPointer = new Vector2();
 
-/** Amplitude do balanço "respirando" e do parallax com o mouse (em metros). */
-const SWAY = { x: 0.12, y: 0.06 };
-const PARALLAX = { x: 2.2, y: 1.2 };
+/** Distância do ponto de mira usado para interpolar o olhar. */
+const AIM_DISTANCE = 100;
 
 /**
- * Câmera cinematográfica. Na tela inicial fica parada entre a grama, olhando a colina;
- * ao começar, sobe até ficar atrás da Aysha e passa a respirar suavemente, reagindo
- * de leve ao mouse. A câmera de 3ª pessoa substitui isto no gameplay.
+ * Abertura cinematográfica: Aysha desperta deitada na grama olhando o céu,
+ * se ergue e o olhar desce até a colina. Ao terminar, entrega a câmera ao jogador.
  */
 export function CameraRig() {
   const phase = useGameStore((state) => state.phase);
@@ -34,28 +32,32 @@ export function CameraRig() {
 
   useEffect(() => {
     if (phase !== "playing") return;
+
+    const { zone, setControlEnabled } = useGameStore.getState();
+    const pose = getSpawnPose(zone);
+    toPosition.set(pose.x, pose.eyeY, pose.z);
+    toTarget.set(
+      pose.x - Math.sin(pose.yaw) * Math.cos(pose.pitch) * AIM_DISTANCE,
+      pose.eyeY + Math.sin(pose.pitch) * AIM_DISTANCE,
+      pose.z - Math.cos(pose.yaw) * Math.cos(pose.pitch) * AIM_DISTANCE,
+    );
+
     const tween = gsap.to(progress.current, {
       value: 1,
       duration: prefersReducedMotion() ? 0 : cameraIntro.duration,
       ease: "power2.inOut",
+      onComplete: () => setControlEnabled(true),
     });
     return () => {
       tween.kill();
     };
   }, [phase]);
 
-  useFrame(({ camera, clock, pointer }, delta) => {
+  useFrame(({ camera }) => {
+    if (useGameStore.getState().controlEnabled) return;
     const t = progress.current.value;
-    const time = clock.elapsedTime;
-    smoothedPointer.lerp(pointer, 1 - Math.exp(-delta * 1.5));
-
     camera.position.lerpVectors(fromPosition, toPosition, t);
-    camera.position.x += Math.sin(time * 0.13) * SWAY.x * t;
-    camera.position.y += Math.sin(time * 0.21) * SWAY.y * t;
-
     lookTarget.lerpVectors(fromTarget, toTarget, t);
-    lookTarget.x += smoothedPointer.x * PARALLAX.x * t;
-    lookTarget.y += smoothedPointer.y * PARALLAX.y * t;
     camera.lookAt(lookTarget);
   });
 

@@ -15,11 +15,13 @@ export const renderConfig = {
   },
 } as const;
 
-/** Câmera de abertura (y relativo ao chão): entre a grama, olhando a colina; sobe até ficar atrás da Aysha. */
+/**
+ * Abertura (alturas relativas ao chão): Aysha deitada na grama olhando o céu.
+ * O destino é a pose inicial do jogador, definida pela zona.
+ */
 export const cameraIntro = {
-  from: { position: [0, 0.75, 24], target: [20, 70, -380] } satisfies CameraPose,
-  to: { position: [1.2, 2.6, 8.5], target: [3, 6, -60] } satisfies CameraPose,
-  duration: 6,
+  from: { position: [0.25, 0.3, 0.5], target: [6, 40, -18] } satisfies CameraPose,
+  duration: 6.5,
 } as const;
 
 /** Paleta do Além: fim de tarde enevoado, luz quente atrás da colina. */

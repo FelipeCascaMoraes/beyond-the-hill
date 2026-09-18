@@ -17,6 +17,8 @@ interface ActiveDialogue {
 interface GameState {
   phase: GamePhase;
   zone: ZoneId;
+  /** Jogador pode andar e olhar (falso durante a abertura e, no futuro, em cenas). */
+  controlEnabled: boolean;
   activeDialogue: ActiveDialogue | null;
   activeMemory: MemoryId | null;
   recoveredMemories: readonly MemoryId[];
@@ -26,6 +28,7 @@ interface GameState {
 interface GameActions {
   startGame: () => void;
   enterZone: (zone: ZoneId) => void;
+  setControlEnabled: (enabled: boolean) => void;
   startDialogue: (id: DialogueId) => void;
   advanceDialogue: () => void;
   recoverMemory: (id: MemoryId) => void;
@@ -36,6 +39,7 @@ interface GameActions {
 const initialState: GameState = {
   phase: "title",
   zone: "arrival",
+  controlEnabled: false,
   activeDialogue: null,
   activeMemory: null,
   recoveredMemories: [],
@@ -53,6 +57,8 @@ export const useGameStore = create<GameState & GameActions>()((set) => ({
   startGame: () => set({ ...initialState, phase: "playing" }),
 
   enterZone: (zone) => set({ zone }),
+
+  setControlEnabled: (enabled) => set({ controlEnabled: enabled }),
 
   startDialogue: (id) => set({ activeDialogue: { id, lineIndex: 0 } }),
 

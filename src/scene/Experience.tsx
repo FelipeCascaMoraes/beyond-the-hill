@@ -6,9 +6,9 @@ import { atmosphere, cameraIntro, renderConfig } from "@/game/config/render";
 import { getQualitySettings } from "@/game/config/quality";
 import { useGameStore } from "@/game/state/gameStore";
 import { CameraRig } from "./camera/CameraRig";
+import { PlayerController } from "./player/PlayerController";
 import { World } from "./world/World";
 import { ZoneRenderer } from "./zones/ZoneRenderer";
-import { Player } from "./actors/Player";
 
 /** Raiz 3D. Só roda no cliente (carregada com ssr: false). */
 export default function Experience() {
@@ -26,10 +26,10 @@ export default function Experience() {
     >
       <color attach="background" args={[atmosphere.horizonColor]} />
       <CameraRig />
+      <PlayerController />
       <Suspense fallback={null}>
         <World />
         <ZoneRenderer />
-        <Player />
       </Suspense>
     </Canvas>
   );

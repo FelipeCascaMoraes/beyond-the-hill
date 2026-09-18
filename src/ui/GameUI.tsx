@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useGameStore } from "@/game/state/gameStore";
 import { TitleScreen } from "./title/TitleScreen";
+import { ControlsHint } from "./ControlsHint";
 import { DialogueBox } from "./DialogueBox";
 import { MemoryOverlay } from "./MemoryOverlay";
 
@@ -16,6 +17,7 @@ export function GameUI() {
     <div className="pointer-events-none absolute inset-0">
       {phase === "playing" && (
         <>
+          <ControlsHint />
           <DialogueBox />
           <MemoryOverlay />
         </>

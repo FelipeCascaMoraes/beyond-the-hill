@@ -8,10 +8,19 @@ export interface Character {
   placeholderColor: string;
 }
 
+/** Área explorável: círculo no plano XZ. */
+export interface ZoneBounds {
+  center: readonly [number, number];
+  radius: number;
+}
+
 export interface Zone {
   title: string;
-  /** Posição inicial da Aysha ao entrar na zona. */
+  /** Posição inicial da Aysha ao entrar na zona (y é ignorado: vem do terreno). */
   playerSpawn: Vec3;
+  /** Para onde a Aysha olha ao entrar na zona. */
+  spawnLookAt: Vec3;
+  bounds: ZoneBounds;
 }
 
 export interface DialogueLine {
