@@ -27,6 +27,16 @@ export function nextAutoMemory<Id extends string>(
 
 export const isLastFragment = (memory: Memory, index: number): boolean => index >= memory.fragments.length - 1;
 
+/** Tempo padrão de um fragmento em memórias que avançam sozinhas (s). */
+export const DEFAULT_FRAGMENT_DURATION = 2.5;
+
+export const fragmentDuration = (memory: Memory, index: number): number =>
+  memory.fragments[index]?.duration ?? DEFAULT_FRAGMENT_DURATION;
+
+/** Duração total dos fragmentos (sem as transições de entrada e saída), em segundos. */
+export const totalDuration = (memory: Memory): number =>
+  memory.fragments.reduce((sum, _, index) => sum + fragmentDuration(memory, index), 0);
+
 /** Problemas estruturais de uma memória (vazio = ok). Usado pelos testes de dados. */
 export function validateMemory(memory: Memory): string[] {
   const problems: string[] = [];
@@ -35,6 +45,7 @@ export function validateMemory(memory: Memory): string[] {
   if (memory.fragments.length === 0) problems.push("sem fragmentos");
   memory.fragments.forEach((fragment, index) => {
     if (!fragment.text.trim()) problems.push(`fragmento ${index} sem texto`);
+    if (fragment.duration !== undefined && fragment.duration < 1) problems.push(`fragmento ${index} curto demais para ler`);
   });
   if (memory.trigger.type === "auto" && memory.trigger.delay < 0) problems.push("atraso negativo");
   return problems;

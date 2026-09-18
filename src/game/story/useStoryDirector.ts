@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { memories, storyBeats, type MemoryId, type StoryBeatId } from "@/content";
+import { memories, storyBeats, type Memory, type MemoryId, type StoryBeatId } from "@/content";
 import { nextAutoMemory } from "@/game/memory/memoryLogic";
 import { selectCanInteract, useGameStore } from "@/game/state/gameStore";
 import { nextBeat } from "./beats";
@@ -23,7 +23,7 @@ function pendingEvent(state: GameStoreState): PendingEvent | null {
 
 function delayOf(event: PendingEvent): number {
   if (event.kind === "beat") return storyBeats[event.id].delay;
-  const { trigger } = memories[event.id];
+  const { trigger } = (memories as Readonly<Record<MemoryId, Memory>>)[event.id];
   return trigger.type === "auto" ? trigger.delay : 0;
 }
 

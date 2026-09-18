@@ -118,12 +118,20 @@ export interface NpcDefinition {
 export interface PointOfInterest {
   zone: ZoneId;
   /** Aparência (definida em scene/poi). */
-  kind: "horseshoe" | "fence" | "cairn" | "flowers" | "boulder";
+  kind: "horseshoe" | "fence" | "cairn" | "flowers" | "boulder" | "gate";
   position: readonly [number, number];
+  /** Giro no eixo vertical (rad). */
+  rotation?: number;
   /** Texto do prompt: "[ E ] {prompt}". */
   prompt: string;
   /** Pensamento da Aysha ao examinar. */
   dialogue: DialogueId;
+  /**
+   * Gatilho de memória: enquanto a memória estiver desbloqueada e não vivida,
+   * a interação abre a memória (com outro prompt). Depois de vivida, usa
+   * `afterDialogue` (se houver) no lugar do pensamento original.
+   */
+  memory?: { id: MemoryId; prompt: string; afterDialogue?: DialogueId };
   /** Se bloqueia a passagem, o raio (m). */
   obstacleRadius?: number;
 }
@@ -144,7 +152,14 @@ export interface MemoryFragment {
   text: string;
   /** `narration` (padrão): descrição. `voice`: uma fala ouvida na lembrança, sem nome. */
   kind?: "narration" | "voice";
+  /** Fala mais baixa e leve (uma voz de criança, um sussurro). */
+  soft?: boolean;
+  /** Tempo em tela (s) quando a memória avança sozinha. */
+  duration?: number;
 }
+
+/** Clima visual da lembrança. */
+export type MemoryTone = "warm" | "cold";
 
 export interface Memory {
   /** Nome curto, mostrado ao entrar na lembrança. */
@@ -154,6 +169,10 @@ export interface Memory {
   /** Condição para desbloquear. Sem condição: desbloqueada desde o início. */
   unlock?: Requirement;
   trigger: MemoryTrigger;
+  /** `warm` (padrão): dourada, afetiva. `cold`: dessaturada, dolorosa. */
+  tone?: MemoryTone;
+  /** Fragmentos avançam sozinhos (E ainda adianta). Padrão: o jogador avança. */
+  autoplay?: boolean;
   fragments: readonly MemoryFragment[];
   /** Marcos da história registrados ao terminar a memória. */
   setsFlags?: readonly StoryFlag[];

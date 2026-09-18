@@ -165,6 +165,35 @@ function Boulder() {
   );
 }
 
+const GATE_WIDTH = 3;
+const WOOD = "#6e5c46";
+
+/** Porteira de madeira sozinha no campo: dois mourões, três tábuas e a travessa diagonal. */
+function Gate() {
+  const half = GATE_WIDTH / 2;
+  return (
+    <>
+      {[-half, half].map((x) => (
+        <mesh key={x} position={[x, 0.7, 0]}>
+          <boxGeometry args={[0.16, 1.55, 0.16]} />
+          <meshLambertMaterial color="#5a4a38" flatShading />
+        </mesh>
+      ))}
+      {[0.35, 0.72, 1.09].map((y) => (
+        <mesh key={y} position={[0, y, 0]}>
+          <boxGeometry args={[GATE_WIDTH - 0.16, 0.13, 0.05]} />
+          <meshLambertMaterial color={WOOD} flatShading />
+        </mesh>
+      ))}
+      {/* Travessa diagonal (mão-francesa) de um canto ao outro. */}
+      <mesh position={[0, 0.72, 0.04]} rotation-z={Math.atan2(0.74, GATE_WIDTH - 0.3)}>
+        <boxGeometry args={[Math.hypot(GATE_WIDTH - 0.3, 0.74), 0.11, 0.05]} />
+        <meshLambertMaterial color={WOOD} flatShading />
+      </mesh>
+    </>
+  );
+}
+
 interface PoiVisualConfig {
   Visual: (props: VisualProps) => React.JSX.Element;
   /** Altura do alvo de interação acima da base (m). */
@@ -183,4 +212,5 @@ export const poiVisuals: Record<PoiKind, PoiVisualConfig> = {
   cairn: { Visual: Cairn, targetHeight: 0.45, targetRadius: 0.6, reach: 2.8, clearing: 1.8 },
   flowers: { Visual: Flowers, targetHeight: 0.55, targetRadius: 1.3, reach: 3.2, clearing: 2.4 },
   boulder: { Visual: Boulder, targetHeight: 0.6, targetRadius: 1.4, reach: 3.6, clearing: 2.6 },
+  gate: { Visual: Gate, targetHeight: 0.8, targetRadius: 1.3, reach: 3.2, clearing: 2.4 },
 };

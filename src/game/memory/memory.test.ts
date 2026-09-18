@@ -2,7 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { memories } from "../../content/memories.ts";
 import type { Memory } from "../../content/types.ts";
-import { canActivate, isLastFragment, memoryStatus, nextAutoMemory, validateMemory } from "./memoryLogic.ts";
+import { canActivate, isLastFragment, memoryStatus, nextAutoMemory, totalDuration, validateMemory } from "./memoryLogic.ts";
+import { pointsOfInterest } from "../../content/pointsOfInterest.ts";
+import { poiInteraction } from "../poi/poiInteraction.ts";
 import { meetsRequirement, type StoryContext } from "../story/requirements.ts";
 
 // Rodar com: npm test
@@ -23,7 +25,7 @@ const sample: Record<"a" | "b" | "c", Memory> = {
     trigger: { type: "auto", delay: 1 },
     fragments: [{ text: "1" }, { text: "2" }],
   },
-  c: { title: "C", description: "c", unlock: { memories: ["first-ride"] }, trigger: { type: "auto", delay: 0 }, fragments: [{ text: "1" }] },
+  c: { title: "C", description: "c", unlock: { memories: ["childhood-ride"] }, trigger: { type: "auto", delay: 0 }, fragments: [{ text: "1" }] },
 };
 
 test("bloqueada → desbloqueada → recuperada", () => {
@@ -46,8 +48,8 @@ test("automática: a primeira desbloqueada e ainda não vivida; interação nunc
 });
 
 test("requisito por memória recuperada", () => {
-  assert.equal(meetsRequirement({ memories: ["first-ride"] }, context()), false);
-  assert.equal(meetsRequirement({ memories: ["first-ride"] }, context({ recoveredMemories: ["first-ride"] })), true);
+  assert.equal(meetsRequirement({ memories: ["childhood-ride"] }, context()), false);
+  assert.equal(meetsRequirement({ memories: ["childhood-ride"] }, context({ recoveredMemories: ["childhood-ride"] })), true);
 });
 
 test("último fragmento", () => {
@@ -61,7 +63,28 @@ test("todas as memórias do jogo são válidas", () => {
   }
 });
 
-test("a memória de teste desbloqueia com a pergunta sobre a colina", () => {
-  assert.equal(nextAutoMemory(memories, context()), null);
-  assert.equal(nextAutoMemory(memories, context({ flags: ["hill-familiar"] })), "first-ride");
+test("primeira memória: desbloqueia com a pergunta da colina, por interação, 10–20 s", () => {
+  const memory = memories["childhood-ride"];
+  assert.equal(memoryStatus("childhood-ride", memory, context()), "locked");
+  assert.equal(memoryStatus("childhood-ride", memory, context({ flags: ["hill-familiar"] })), "unlocked");
+  assert.equal(nextAutoMemory(memories, context({ flags: ["hill-familiar"] })), null, "não dispara sozinha");
+  const seconds = totalDuration(memory);
+  assert.ok(seconds >= 10 && seconds <= 20, `duração ${seconds}s`);
+});
+
+test("a porteira: examinar → tocar (memória) → pensamento posterior", () => {
+  const gate = pointsOfInterest.gate;
+  assert.deepEqual(poiInteraction(gate, "locked"), { prompt: "Examinar", action: { type: "dialogue", dialogue: "poi-gate" } });
+  assert.deepEqual(poiInteraction(gate, "unlocked"), {
+    prompt: "Tocar a porteira",
+    action: { type: "memory", memory: "childhood-ride" },
+  });
+  assert.deepEqual(poiInteraction(gate, "recovered"), {
+    prompt: "Examinar",
+    action: { type: "dialogue", dialogue: "poi-gate-after" },
+  });
+  assert.deepEqual(poiInteraction(pointsOfInterest.cairn, null), {
+    prompt: "Examinar",
+    action: { type: "dialogue", dialogue: "poi-cairn" },
+  });
 });

@@ -34,6 +34,18 @@ export const pointsOfInterest = {
     prompt: "Observar",
     dialogue: "poi-flowers",
   },
+  // A porteira no fim da trilha, no limite do campo, virada para a colina:
+  // o lugar onde o pai sempre dava meia-volta. Gatilho da primeira memória.
+  gate: {
+    zone: "arrival",
+    kind: "gate",
+    position: [-2.45, -30],
+    rotation: -0.08,
+    prompt: "Examinar",
+    dialogue: "poi-gate",
+    memory: { id: "childhood-ride", prompt: "Tocar a porteira", afterDialogue: "poi-gate-after" },
+    obstacleRadius: 1.4,
+  },
   overlook: {
     zone: "arrival",
     kind: "boulder",

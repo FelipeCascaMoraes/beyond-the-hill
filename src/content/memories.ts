@@ -3,22 +3,28 @@ import type { Memory } from "./types";
 // Memórias da Aysha: só dados. Para criar uma nova, basta adicionar uma
 // entrada aqui; a lógica (desbloqueio, ativação, apresentação) é genérica.
 //
-// As lembranças voltam em fragmentos: sensações antes de fatos. Os nomes e o
-// passado criminoso só devem aparecer bem mais tarde na jornada.
+// As lembranças voltam em fragmentos: sensações antes de fatos. Os nomes, o
+// passado criminoso e as mortes só devem aparecer bem mais tarde na jornada.
 
 export const memories = {
-  // Memória de teste: primeira lembrança, logo depois da pergunta sobre a colina.
-  "first-ride": {
-    title: "O campo",
-    description: "Vento, um cavalo grande demais e uma colina que não se podia alcançar.",
+  // Primeira memória real: a infância, o pai e a colina que nunca se alcançava.
+  // Ativada pela porteira no fim da trilha, depois que a colina parece familiar.
+  // ~16 s de fragmentos, avançando sozinhos (~19 s com as transições).
+  "childhood-ride": {
+    title: "O campo dourado",
+    description: "Uma menina, o pai, um cavalo e uma colina que ele nunca a deixava alcançar.",
     unlock: { flags: ["hill-familiar"] },
-    trigger: { type: "auto", delay: 4 },
+    trigger: { type: "interaction" },
+    tone: "warm",
+    autoplay: true,
     fragments: [
-      { text: "Vento no rosto. Cheiro de grama quente." },
-      { text: "Um cavalo grande demais para ela. Mãos firmes segurando as rédeas por cima das suas." },
-      { text: "Ao longe, uma colina. Ela aponta." },
-      { kind: "voice", text: "Até ali não, pequena. Ainda não." },
-      { text: "A lembrança se desfaz antes que ela veja o rosto." },
+      { text: "Um campo igual a este. Mãos pequenas agarradas à crina de um cavalo.", duration: 2.9 },
+      { kind: "voice", text: "Segura firme. Eu estou aqui.", duration: 2.1 },
+      { text: "Ele ri. Ela ri mais alto.", duration: 1.9 },
+      { kind: "voice", text: "Quero que você lembre deste dia.", duration: 2.3 },
+      { kind: "voice", soft: true, text: "Pai... o que tem depois da colina?", duration: 2.4 },
+      { kind: "voice", text: "Hoje não, pequena.", duration: 1.9 },
+      { text: "Ele vira o cavalo. A colina fica para trás.", duration: 2.5 },
     ],
     setsFlags: ["first-memory"],
   },

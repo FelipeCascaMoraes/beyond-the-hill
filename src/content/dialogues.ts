@@ -71,11 +71,24 @@ export const dialogues = {
     { speaker: "aysha", text: "Eu conheço essa forma. O jeito que ela desce pela esquerda..." },
   ]),
 
+  "poi-gate": linear([
+    { speaker: "narrator", text: "Uma porteira de madeira, sozinha no fim da trilha. Não há cerca dos lados." },
+    { speaker: "aysha", text: "Nada impede a passagem. Mesmo assim, ela está fechada." },
+  ]),
+
+  // Depois de viver a memória da porteira.
+  "poi-gate-after": linear([
+    { speaker: "narrator", text: "A madeira está morna sob a mão dela." },
+    { speaker: "aysha", text: "Era sempre aqui que ele virava o cavalo." },
+  ]),
+
   // ── A pergunta ─────────────────────────────────────────────────────────
   "arrival-hill-familiar": linear(
     [
       { speaker: "narrator", text: "Aysha para. O vento corre pela grama na direção da colina." },
       { speaker: "aysha", text: "Por que aquela colina parece tão familiar?" },
+      // Condução natural até o gatilho da primeira memória, sem marcador.
+      { speaker: "narrator", text: "O olhar dela desce pela trilha até a velha porteira." },
     ],
     { setsFlags: ["hill-familiar"] },
   ),

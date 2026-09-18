@@ -1,4 +1,7 @@
-import { pointsOfInterest, type PointOfInterestId, type ZoneId } from "@/content";
+import { memories, pointsOfInterest, type PointOfInterest, type PointOfInterestId, type ZoneId } from "@/content";
+import { memoryStatus } from "@/game/memory/memoryLogic";
+import { poiInteraction } from "@/game/poi/poiInteraction";
+import { useGameStore } from "@/game/state/gameStore";
 import { terrainHeight } from "@/game/world/terrain";
 import type { GrassClearing } from "../world/geometry";
 import { useInteractable } from "../interaction/useInteractable";
@@ -8,18 +11,24 @@ const poiIds = Object.keys(pointsOfInterest) as PointOfInterestId[];
 
 const inZone = (zone: ZoneId) => poiIds.filter((id) => pointsOfInterest[id].zone === zone);
 
-/** Um ponto de interesse: visual + interação que abre o pensamento da Aysha. */
+/**
+ * Um ponto de interesse: visual + interação. Se estiver ligado a uma memória,
+ * a interação muda sozinha conforme ela desbloqueia e é vivida.
+ */
 function PointOfInterestView({ id }: { id: PointOfInterestId }) {
-  const poi = pointsOfInterest[id];
+  const poi: PointOfInterest = pointsOfInterest[id];
   const visual = poiVisuals[poi.kind];
   const [x, z] = poi.position;
   const y = terrainHeight(x, z);
 
+  const status = useGameStore((state) => (poi.memory ? memoryStatus(poi.memory.id, memories[poi.memory.id], state) : null));
+  const { prompt, action } = poiInteraction(poi, status);
+
   useInteractable(
     {
       id: `poi-${id}`,
-      prompt: poi.prompt,
-      action: { type: "dialogue", dialogue: poi.dialogue },
+      prompt,
+      action,
       reach: visual.reach,
       targetRadius: visual.targetRadius,
     },
@@ -28,7 +37,7 @@ function PointOfInterestView({ id }: { id: PointOfInterestId }) {
 
   const { Visual } = visual;
   return (
-    <group position={[x, y, z]}>
+    <group position={[x, y, z]} rotation-y={poi.rotation ?? 0}>
       <Visual x={x} y={y} z={z} />
     </group>
   );

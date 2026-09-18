@@ -13,6 +13,7 @@ export const arrivalPoiDialogues = [
   "poi-cairn",
   "poi-flowers",
   "poi-overlook",
+  "poi-gate",
 ] as const;
 
 /**

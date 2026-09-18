@@ -1,9 +1,9 @@
 "use client";
 
-import { useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import gsap from "gsap";
-import { memories, type Memory, type MemoryId } from "@/content";
-import { isLastFragment } from "@/game/memory/memoryLogic";
+import { memories, type Memory, type MemoryId, type MemoryTone } from "@/content";
+import { fragmentDuration, isLastFragment } from "@/game/memory/memoryLogic";
 import { useGameStore } from "@/game/state/gameStore";
 import { prefersReducedMotion } from "@/lib/motion";
 import { ADVANCE_KEYS, useKeyPress } from "../useKeyPress";
@@ -16,6 +16,24 @@ export function MemoryOverlay() {
 }
 
 type Stage = "entering" | "showing" | "leaving";
+
+/** Aparência de cada clima de lembrança. */
+const tones: Record<MemoryTone, { veil: string; shade: string; leak: string; flash: string }> = {
+  // Dourada, afetiva: sépia quente e uma luz vazando pelo canto, como um filme antigo.
+  warm: {
+    veil: "backdrop-blur-[6px] backdrop-brightness-90 backdrop-contrast-90 backdrop-sepia-75 backdrop-saturate-125",
+    shade: "bg-[radial-gradient(ellipse_at_center,rgba(140,95,35,0.14)_0%,rgba(22,12,3,0.8)_100%)]",
+    leak: "bg-[radial-gradient(circle_at_85%_12%,rgba(255,200,120,0.35),transparent_45%)]",
+    flash: "bg-[#f7ecd6]",
+  },
+  // Fria, dolorosa: quase sem cor, escura.
+  cold: {
+    veil: "backdrop-blur-[6px] backdrop-brightness-75 backdrop-grayscale-80",
+    shade: "bg-[radial-gradient(ellipse_at_center,rgba(40,55,70,0.12)_0%,rgba(4,6,10,0.85)_100%)]",
+    leak: "",
+    flash: "bg-[#dfe6ee]",
+  },
+};
 
 /**
  * Sequência de uma memória:
@@ -42,10 +60,10 @@ function MemorySequence({ id }: { id: MemoryId }) {
         .fromTo(
           "[data-memory-flash]",
           { autoAlpha: 0 },
-          { autoAlpha: reduced ? 0 : 0.92, duration: reduced ? 0 : 0.5, ease: "power2.in" },
+          { autoAlpha: reduced ? 0 : 0.92, duration: reduced ? 0 : 0.45, ease: "power2.in" },
         )
         .set("[data-memory-veil]", { autoAlpha: 1 })
-        .to("[data-memory-flash]", { autoAlpha: 0, duration: reduced ? 0.2 : 1.4, ease: "power2.out" })
+        .to("[data-memory-flash]", { autoAlpha: 0, duration: reduced ? 0.2 : 1.2, ease: "power2.out" })
         .fromTo("[data-memory-content]", { autoAlpha: 0 }, { autoAlpha: 1, duration: reduced ? 0.2 : 1 }, reduced ? ">" : "-=0.7");
     }, rootRef);
     contextRef.current = context;
@@ -59,10 +77,10 @@ function MemorySequence({ id }: { id: MemoryId }) {
     contextRef.current?.add(() => {
       gsap
         .timeline({ onComplete: completeMemory })
-        .to("[data-memory-content]", { autoAlpha: 0, duration: reduced ? 0.15 : 0.7 })
-        .to("[data-memory-flash]", { autoAlpha: reduced ? 0 : 0.8, duration: reduced ? 0 : 0.45, ease: "power2.in" })
+        .to("[data-memory-content]", { autoAlpha: 0, duration: reduced ? 0.15 : 0.5 })
+        .to("[data-memory-flash]", { autoAlpha: reduced ? 0 : 0.8, duration: reduced ? 0 : 0.35, ease: "power2.in" })
         .set("[data-memory-veil]", { autoAlpha: 0 })
-        .to("[data-memory-flash]", { autoAlpha: 0, duration: reduced ? 0.15 : 1.1, ease: "power2.out" });
+        .to("[data-memory-flash]", { autoAlpha: 0, duration: reduced ? 0.15 : 0.9, ease: "power2.out" });
     });
   };
 
@@ -74,8 +92,26 @@ function MemorySequence({ id }: { id: MemoryId }) {
   };
   useKeyPress(stage === "showing", ADVANCE_KEYS, handleAdvance);
 
+  // Memórias em reprodução automática avançam sozinhas (E ainda adianta).
+  const advanceRef = useRef(handleAdvance);
+  useEffect(() => {
+    advanceRef.current = handleAdvance;
+  });
+  const duration = fragmentDuration(memory, fragmentIndex);
+  useEffect(() => {
+    if (!memory.autoplay || stage !== "showing") return;
+    const timer = setTimeout(() => advanceRef.current(), duration * 1000);
+    return () => clearTimeout(timer);
+  }, [memory.autoplay, stage, fragmentIndex, duration]);
+
+  const tone = tones[memory.tone ?? "warm"];
   const fragment = memory.fragments[fragmentIndex];
   const isVoice = fragment.kind === "voice";
+  const textStyle = fragment.soft
+    ? "text-[clamp(1.1rem,2vw,1.5rem)] tracking-[0.04em] text-amber-50/80 italic"
+    : isVoice
+      ? "text-[clamp(1.35rem,2.6vw,2rem)] text-amber-100 italic"
+      : "text-[clamp(1.35rem,2.6vw,2rem)] font-light text-stone-100";
 
   return (
     <div
@@ -86,11 +122,9 @@ function MemorySequence({ id }: { id: MemoryId }) {
       className="pointer-events-auto absolute inset-0 cursor-pointer overflow-hidden"
     >
       {/* O mundo continua ali atrás, mas em sépia, desfocado e escurecido nas bordas. */}
-      <div
-        data-memory-veil
-        className="invisible absolute inset-0 overflow-hidden backdrop-blur-[6px] backdrop-brightness-85 backdrop-contrast-90 backdrop-sepia-70"
-      >
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,rgba(70,46,20,0.1)_0%,rgba(16,9,3,0.82)_100%)]" />
+      <div data-memory-veil className={`invisible absolute inset-0 overflow-hidden ${tone.veil}`}>
+        <div className={`absolute inset-0 ${tone.shade}`} />
+        {tone.leak && <div className={`hill-glow absolute inset-0 mix-blend-screen ${tone.leak}`} />}
         <div className="film-grain" />
       </div>
 
@@ -102,9 +136,7 @@ function MemorySequence({ id }: { id: MemoryId }) {
         <p
           key={fragmentIndex}
           aria-live="polite"
-          className={`mt-12 max-w-2xl font-serif text-[clamp(1.35rem,2.6vw,2rem)] leading-relaxed animate-[memory-fragment-in_1.4s_ease-out] motion-reduce:animate-none ${
-            isVoice ? "text-amber-100 italic" : "font-light text-stone-100"
-          }`}
+          className={`mt-12 max-w-2xl font-serif leading-relaxed animate-[memory-fragment-in_1.4s_ease-out] motion-reduce:animate-none ${textStyle}`}
         >
           {isVoice ? `“${fragment.text}”` : fragment.text}
         </p>
@@ -118,16 +150,19 @@ function MemorySequence({ id }: { id: MemoryId }) {
           ))}
         </div>
 
-        <p
-          className={`absolute bottom-[10vh] text-[0.65rem] tracking-[0.3em] text-stone-300/60 uppercase transition-opacity duration-700 ${
-            stage === "showing" ? "opacity-100" : "opacity-0"
-          }`}
-        >
-          {isLast ? "[ E ] voltar" : "[ E ] continuar"}
-        </p>
+        {/* Em reprodução automática não há instrução: só a lembrança. */}
+        {!memory.autoplay && (
+          <p
+            className={`absolute bottom-[10vh] text-[0.65rem] tracking-[0.3em] text-stone-300/60 uppercase transition-opacity duration-700 ${
+              stage === "showing" ? "opacity-100" : "opacity-0"
+            }`}
+          >
+            {isLast ? "[ E ] voltar" : "[ E ] continuar"}
+          </p>
+        )}
       </div>
 
-      <div data-memory-flash className="pointer-events-none invisible absolute inset-0 bg-[#f7ecd6]" />
+      <div data-memory-flash className={`pointer-events-none invisible absolute inset-0 ${tone.flash}`} />
     </div>
   );
 }
