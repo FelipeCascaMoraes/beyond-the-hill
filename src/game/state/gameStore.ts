@@ -1,7 +1,9 @@
 import { create } from "zustand";
 import {
   dialogues,
+  type CharacterId,
   type DialogueId,
+  type DialogueLine,
   type EndingChoice,
   type MemoryId,
   type ZoneId,
@@ -27,6 +29,10 @@ interface GameState {
   controlEnabled: boolean;
   interactionFocus: InteractionFocus | null;
   activeDialogue: ActiveDialogue | null;
+  /** Conversas já concluídas (define o que cada NPC diz a seguir). */
+  seenDialogues: readonly DialogueId[];
+  /** Personagens cujo nome a Aysha já conhece. */
+  knownCharacters: readonly CharacterId[];
   activeMemory: MemoryId | null;
   recoveredMemories: readonly MemoryId[];
   endingChoice: EndingChoice | null;
@@ -50,10 +56,19 @@ const initialState: GameState = {
   controlEnabled: false,
   interactionFocus: null,
   activeDialogue: null,
+  seenDialogues: [],
+  knownCharacters: ["aysha"],
   activeMemory: null,
   recoveredMemories: [],
   endingChoice: null,
 };
+
+const addUnique = <T,>(list: readonly T[], item: T): readonly T[] => (list.includes(item) ? list : [...list, item]);
+
+/** Quando uma fala apresenta alguém, o nome passa a ser conhecido. */
+function learnFromLine(known: readonly CharacterId[], line: DialogueLine): readonly CharacterId[] {
+  return line.introduces ? addUnique(known, line.introduces) : known;
+}
 
 /**
  * Estado global da experiência.
@@ -71,22 +86,30 @@ export const useGameStore = create<GameState & GameActions>()((set) => ({
 
   setInteractionFocus: (focus) => set({ interactionFocus: focus }),
 
-  startDialogue: (id) => set({ activeDialogue: { id, lineIndex: 0 } }),
+  startDialogue: (id) =>
+    set(({ knownCharacters }) => ({
+      activeDialogue: { id, lineIndex: 0 },
+      knownCharacters: learnFromLine(knownCharacters, dialogues[id].lines[0]),
+    })),
 
   advanceDialogue: () =>
-    set(({ activeDialogue }) => {
+    set(({ activeDialogue, seenDialogues, knownCharacters }) => {
       if (!activeDialogue) return {};
+      const { lines } = dialogues[activeDialogue.id];
       const next = activeDialogue.lineIndex + 1;
-      const done = next >= dialogues[activeDialogue.id].lines.length;
-      return { activeDialogue: done ? null : { ...activeDialogue, lineIndex: next } };
+      if (next >= lines.length) {
+        return { activeDialogue: null, seenDialogues: addUnique(seenDialogues, activeDialogue.id) };
+      }
+      return {
+        activeDialogue: { ...activeDialogue, lineIndex: next },
+        knownCharacters: learnFromLine(knownCharacters, lines[next]),
+      };
     }),
 
   recoverMemory: (id) =>
     set(({ recoveredMemories }) => ({
       activeMemory: id,
-      recoveredMemories: recoveredMemories.includes(id)
-        ? recoveredMemories
-        : [...recoveredMemories, id],
+      recoveredMemories: addUnique(recoveredMemories, id),
     })),
 
   closeMemory: () => set({ activeMemory: null }),

@@ -15,6 +15,7 @@ const config: PlayerConfig = {
   maxPitch: 1.2,
   groundSmoothing: 1000,
   boundsSoftMargin: 2,
+  bodyRadius: 0.3,
   headBob: { amplitude: 0.02, stepsPerMeter: 1 },
 };
 
@@ -86,4 +87,12 @@ test("lookAngles aponta para o alvo", () => {
 test("balanço do passo é zero parado", () => {
   const player = createPlayerState({ x: 0, z: 0, eyeY: 1.6, yaw: 0, pitch: 0 });
   assert.equal(headBobOffset(player, config), 0);
+});
+
+test("não atravessa obstáculos e desliza pela lateral", () => {
+  const withObstacle: PlayerEnvironment = { ...flat, obstacles: [{ x: 0.1, z: -3, radius: 0.45 }] };
+  const player = simulate(4, { ...idle, forward: 1 }, withObstacle);
+  const separation = Math.hypot(player.x - 0.1, player.z + 3);
+  assert.ok(separation >= 0.45 + config.bodyRadius - 1e-9, `separação ${separation}`);
+  assert.ok(player.z < -3, "deslizou e passou pelo obstáculo");
 });

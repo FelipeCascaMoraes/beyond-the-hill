@@ -28,9 +28,17 @@ export interface PlayerInput {
   lookDeltaY: number;
 }
 
+/** Obstáculo circular no plano XZ (NPCs, pedras, troncos). */
+export interface CircleObstacle {
+  x: number;
+  z: number;
+  radius: number;
+}
+
 export interface PlayerEnvironment {
   heightAt: (x: number, z: number) => number;
   bounds: { centerX: number; centerZ: number; radius: number };
+  obstacles?: readonly CircleObstacle[];
 }
 
 export interface SpawnPose {
@@ -136,6 +144,17 @@ export function updatePlayer(
 
   state.x += state.velocityX * dt;
   state.z += state.velocityZ * dt;
+
+  // Obstáculos: empurra para fora do círculo; o movimento tangente continua (desliza).
+  for (const obstacle of environment.obstacles ?? []) {
+    const awayX = state.x - obstacle.x;
+    const awayZ = state.z - obstacle.z;
+    const minDistance = obstacle.radius + config.bodyRadius;
+    const separation = Math.hypot(awayX, awayZ);
+    if (separation >= minDistance || separation < 1e-6) continue;
+    state.x = obstacle.x + (awayX / separation) * minDistance;
+    state.z = obstacle.z + (awayZ / separation) * minDistance;
+  }
 
   // Limite rígido: nunca sai do círculo, desliza pela borda.
   offsetX = state.x - centerX;

@@ -1,4 +1,5 @@
 import { getQualitySettings } from "@/game/config/quality";
+import { ZoneNpcs } from "../actors/ZoneNpcs";
 import { DevInteractionProbe } from "../interaction/DevInteractionProbe";
 import { Grass } from "../world/Grass";
 import { Motes } from "../world/Motes";
@@ -12,6 +13,7 @@ export function ArrivalZone() {
     <>
       <Grass count={quality.grassBlades} radius={quality.grassRadius} centerZ={4} />
       <Motes count={quality.motes} />
+      <ZoneNpcs zone="arrival" />
       {isDevelopment && <DevInteractionProbe />}
     </>
   );

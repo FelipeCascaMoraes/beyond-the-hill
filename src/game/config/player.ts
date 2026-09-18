@@ -18,6 +18,8 @@ export interface PlayerConfig {
   groundSmoothing: number;
   /** Faixa antes do limite em que o passo vai perdendo força. */
   boundsSoftMargin: number;
+  /** Raio do corpo da Aysha para colisão com obstáculos (m). */
+  bodyRadius: number;
   headBob: {
     /** Amplitude vertical do passo (m). */
     amplitude: number;
@@ -36,6 +38,7 @@ export const playerConfig: PlayerConfig = {
   maxPitch: 1.3,
   groundSmoothing: 10,
   boundsSoftMargin: 5,
+  bodyRadius: 0.3,
   headBob: {
     amplitude: 0.02,
     stepsPerMeter: 0.85,

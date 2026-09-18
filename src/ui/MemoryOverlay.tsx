@@ -2,10 +2,12 @@
 
 import { memories } from "@/content";
 import { useGameStore } from "@/game/state/gameStore";
+import { useAdvanceKeys } from "./useAdvanceKeys";
 
 export function MemoryOverlay() {
   const activeMemory = useGameStore((state) => state.activeMemory);
   const closeMemory = useGameStore((state) => state.closeMemory);
+  useAdvanceKeys(activeMemory !== null, closeMemory);
 
   if (!activeMemory) return null;
   const memory = memories[activeMemory];

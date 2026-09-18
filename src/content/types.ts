@@ -1,9 +1,14 @@
 // Tipos dos dados narrativos. Nada aqui depende de React ou Three.js.
+import type { CharacterId } from "./characters";
+import type { DialogueId } from "./dialogues";
+import type { ZoneId } from "./zones";
 
 export type Vec3 = readonly [number, number, number];
 
 export interface Character {
   name: string;
+  /** Como a Aysha se refere ao personagem antes de ele se apresentar (com artigo: "a mulher..."). */
+  epithet: string;
   /** Cor provisória usada enquanto não há modelo 3D. */
   placeholderColor: string;
 }
@@ -24,12 +29,28 @@ export interface Zone {
 }
 
 export interface DialogueLine {
-  speaker: string;
+  speaker: CharacterId;
   text: string;
+  /** Nesta fala o personagem se apresenta: a partir daqui o nome aparece no lugar do epíteto. */
+  introduces?: CharacterId;
 }
 
 export interface Dialogue {
   lines: readonly DialogueLine[];
+}
+
+/** Um NPC no mundo: onde está e o que tem a dizer. */
+export interface NpcDefinition {
+  zone: ZoneId;
+  /** Posição no plano XZ (a altura vem do terreno). */
+  position: readonly [number, number];
+  /** Para onde olha quando a Aysha está longe. */
+  restLookAt: readonly [number, number];
+  /**
+   * Conversas em ordem: cada interação toca a próxima ainda não vista;
+   * a última se repete.
+   */
+  conversation: readonly DialogueId[];
 }
 
 export interface Memory {
