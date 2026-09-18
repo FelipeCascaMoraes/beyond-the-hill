@@ -11,7 +11,7 @@ export const renderConfig = {
   camera: {
     fov: 50,
     near: 0.1,
-    far: 1600,
+    far: 2600,
   },
 } as const;
 
@@ -30,12 +30,19 @@ export const atmosphere = {
   horizonColor: "#cfc3a8",
   zenithColor: "#4f6078",
   sunColor: "#ffd49a",
-  /** Direção de onde vem a luz: logo acima da crista da colina. */
-  sunDirection: [0.05, 0.29, -0.956] as Vec3Tuple,
-  fogDensity: 0.0032,
-  skyRadius: 1100,
-  groundColor: "#434b2c",
-  groundColorAlt: "#5a5a36",
+  /** Direção de onde vem a luz: logo atrás da árvore no cume da colina. */
+  sunDirection: [0.08, 0.235, -0.97] as Vec3Tuple,
+  /** Neblina exponencial, mais densa rente ao chão (ver shaders/heightFog.ts). */
+  fogDensity: 0.0026,
+  /** Quanto a neblina afina com a altura (por metro). */
+  fogHeightFalloff: 0.02,
+  /** Densidade mínima no alto, relativa à do chão. */
+  fogMinFactor: 0.3,
+  skyRadius: 2300,
+  groundColor: "#56603a",
+  groundColorAlt: "#6e6c42",
+  trailColor: "#6e6844",
+  treeColor: "#26261c",
   grassBaseColor: "#232c17",
   grassTipColor: "#8c9460",
   moteColor: "#ffe6b8",

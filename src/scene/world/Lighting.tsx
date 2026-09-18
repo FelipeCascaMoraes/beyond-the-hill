@@ -6,7 +6,7 @@ const [sx, sy, sz] = atmosphere.sunDirection;
 export function Lighting() {
   return (
     <>
-      <hemisphereLight args={["#c9d0d8", "#3b3624", 1.5]} />
+      <hemisphereLight args={["#d3d4d0", "#4a4430", 1.9]} />
       <directionalLight position={[sx * 200, sy * 200, sz * 200]} intensity={1.8} color={atmosphere.sunColor} />
     </>
   );

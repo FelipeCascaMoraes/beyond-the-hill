@@ -9,6 +9,10 @@ import { CameraRig } from "./camera/CameraRig";
 import { PlayerController } from "./player/PlayerController";
 import { World } from "./world/World";
 import { ZoneRenderer } from "./zones/ZoneRenderer";
+import { installHeightFog } from "./shaders/heightFog";
+
+// Antes de qualquer material compilar.
+installHeightFog();
 
 /** Raiz 3D. Só roda no cliente (carregada com ssr: false). */
 export default function Experience() {

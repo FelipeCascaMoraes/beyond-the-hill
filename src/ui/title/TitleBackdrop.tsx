@@ -1,3 +1,6 @@
+const HILL_CURVE =
+  "C 150 345 280 300 400 262 C 470 240 540 246 600 232 C 680 212 720 160 800 152 C 870 146 930 190 1010 250 C 1080 300 1250 330 1440 342";
+
 /** Fundo da tela inicial: gradiente, silhueta da colina, granulação e vinheta. Sem imagens externas. */
 export function TitleBackdrop() {
   return (
@@ -18,18 +21,26 @@ export function TitleBackdrop() {
               <stop offset="1" stopColor="#050505" />
             </linearGradient>
           </defs>
+          {/* Mesma silhueta da colina 3D (encosta longa, ombro à esquerda, árvore no cume):
+              o jogador a reconhece ao despertar. */}
           <path
-            d="M0 400 L0 330 C 260 322 500 150 760 126 C 990 108 1170 250 1440 298 L1440 400 Z"
+            d={`M0 400 L0 352 ${HILL_CURVE} L1440 400 Z`}
             fill="url(#title-hill-fill)"
           />
           <path
-            d="M0 330 C 260 322 500 150 760 126 C 990 108 1170 250 1440 298"
+            d={`M0 352 ${HILL_CURVE}`}
             fill="none"
             stroke="#d8c9a0"
             strokeOpacity="0.12"
             strokeWidth="1"
             vectorEffect="non-scaling-stroke"
           />
+          <g fill="#17150f">
+            <path d="M797 154 L799.2 134 L800.8 134 L803 154 Z" />
+            <ellipse cx="800" cy="128" rx="15" ry="7" />
+            <ellipse cx="790" cy="132" rx="9" ry="5" />
+            <ellipse cx="810" cy="131" rx="9" ry="5" />
+          </g>
         </svg>
       </div>
 

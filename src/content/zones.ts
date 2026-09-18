@@ -12,8 +12,8 @@ export const zones = {
   arrival: {
     title: "O Além",
     playerSpawn: [0, 0, 0],
-    // Olhar voltado para a colina no horizonte.
-    spawnLookAt: [20, 55, -380],
+    // Olhar voltado para a colina: horizonte no terço inferior, cume um pouco à direita.
+    spawnLookAt: [-10, 95, -720],
     bounds: { center: [0, 4], radius: 38 },
   },
   houses: { title: "As Casas Abandonadas", ...placeholder },
