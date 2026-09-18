@@ -3,7 +3,7 @@ import type { StoryBeat } from "./types";
 // Progressão narrativa: marcos da história e momentos que acontecem sozinhos.
 
 /** Marcos da história, ligados ao fim de diálogos (`setsFlags`). */
-export const storyFlags = ["met-guides", "hill-familiar", "first-memory"] as const;
+export const storyFlags = ["met-guides", "hill-familiar", "first-memory", "found-drawing"] as const;
 export type StoryFlag = (typeof storyFlags)[number];
 
 /** Pensamentos dos pontos de interesse do campo de chegada. */
@@ -14,6 +14,10 @@ export const arrivalPoiDialogues = [
   "poi-flowers",
   "poi-overlook",
   "poi-gate",
+  "poi-house-drawing",
+  "poi-house-table",
+  "poi-house-horse",
+  "poi-house-window",
 ] as const;
 
 /**

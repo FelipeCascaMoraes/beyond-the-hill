@@ -15,7 +15,7 @@ export interface Character {
   placeholderColor: string;
 }
 
-/** Área explorável: círculo no plano XZ. */
+/** Círculo no plano XZ. */
 export interface ZoneBounds {
   center: readonly [number, number];
   radius: number;
@@ -27,7 +27,16 @@ export interface Zone {
   playerSpawn: Vec3;
   /** Para onde a Aysha olha ao entrar na zona. */
   spawnLookAt: Vec3;
-  bounds: ZoneBounds;
+  /** Área explorável: união de círculos (que devem se sobrepor para haver passagem). */
+  bounds: readonly ZoneBounds[];
+}
+
+/** Ao entrar no círculo pela primeira vez, toca um diálogo (normalmente sem travar o movimento). */
+export interface AreaTrigger {
+  zone: ZoneId;
+  center: readonly [number, number];
+  radius: number;
+  dialogue: DialogueId;
 }
 
 // ── Diálogos ─────────────────────────────────────────────────────────────
@@ -118,7 +127,7 @@ export interface NpcDefinition {
 export interface PointOfInterest {
   zone: ZoneId;
   /** Aparência (definida em scene/poi). */
-  kind: "horseshoe" | "fence" | "cairn" | "flowers" | "boulder" | "gate";
+  kind: "horseshoe" | "fence" | "cairn" | "flowers" | "boulder" | "gate" | "drawing" | "table" | "toy-horse" | "window";
   position: readonly [number, number];
   /** Giro no eixo vertical (rad). */
   rotation?: number;

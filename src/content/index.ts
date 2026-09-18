@@ -6,3 +6,4 @@ export * from "./memories";
 export * from "./npcs";
 export * from "./story";
 export * from "./pointsOfInterest";
+export * from "./areas";

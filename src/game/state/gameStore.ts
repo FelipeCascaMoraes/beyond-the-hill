@@ -135,7 +135,12 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
 
   setInteractionFocus: (focus) => set({ interactionFocus: focus }),
 
-  startDialogue: (id) => set((state) => moveDialogue(state, id, beginDialogue(dialogues[id]))),
+  // Uma fala de fundo em andamento pode ser interrompida: conta como vista (não se repete).
+  startDialogue: (id) =>
+    set((state) => {
+      const seenDialogues = state.activeDialogue ? addUnique(state.seenDialogues, state.activeDialogue.id) : state.seenDialogues;
+      return moveDialogue({ ...state, seenDialogues }, id, beginDialogue(dialogues[id]));
+    }),
 
   advanceDialogue: () =>
     set((state) => {
@@ -155,9 +160,11 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
 
   activateMemory: (id) => {
     const state = get();
-    if (state.activeMemory || state.activeDialogue) return false;
+    if (state.activeMemory || selectDialogueBlocksMovement(state)) return false;
     if (!canActivate(memoryStatus(id, memories[id], state))) return false;
-    set({ activeMemory: { id, fragment: 0 }, interactionFocus: null });
+    // Fala de fundo em andamento: interrompida e contada como vista.
+    const seenDialogues = state.activeDialogue ? addUnique(state.seenDialogues, state.activeDialogue.id) : state.seenDialogues;
+    set({ activeMemory: { id, fragment: 0 }, activeDialogue: null, seenDialogues, interactionFocus: null });
     return true;
   },
 
@@ -197,6 +204,14 @@ export const selectMemoryStatus =
   (state: GameState): MemoryStatus =>
     memoryStatus(id, memories[id], state);
 
-/** Pode iniciar uma interação? Além de controlar, não pode haver diálogo aberto. */
-export const selectCanInteract = (state: GameState): boolean =>
-  selectCanControl(state) && state.activeDialogue === null;
+/**
+ * Pode iniciar uma interação? Sempre que pode controlar: durante uma fala de
+ * fundo (que não trava) também — interagir a interrompe.
+ */
+export const selectCanInteract = (state: GameState): boolean => selectCanControl(state);
+
+/**
+ * Tela livre: pode controlar e não há nenhum diálogo, nem de fundo. É quando o
+ * jogo pode disparar algo sozinho (momentos, memórias, gatilhos de área).
+ */
+export const selectIsFree = (state: GameState): boolean => selectCanControl(state) && state.activeDialogue === null;

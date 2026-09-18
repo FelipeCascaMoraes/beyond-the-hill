@@ -1,3 +1,4 @@
+import { HOUSE } from "./house";
 import { fbm, smoothstep } from "./noise";
 
 // Forma do mundo. Fonte única da altura do chão: terreno, grama, árvore e o
@@ -39,7 +40,25 @@ function hillHeight(x: number, z: number): number {
   return main + shoulder;
 }
 
+/** Chão nivelado sob a casa, com transição suave para o terreno em volta. */
+const HOUSE_PAD = { x: HOUSE.x, z: HOUSE.z, radius: 4.5, feather: 7 } as const;
+
 export function terrainHeight(x: number, z: number): number {
+  const natural = naturalHeight(x, z);
+  const fromPad = Math.hypot(x - HOUSE_PAD.x, z - HOUSE_PAD.z);
+  if (fromPad >= HOUSE_PAD.radius + HOUSE_PAD.feather) return natural;
+  const flatten = 1 - smoothstep(HOUSE_PAD.radius, HOUSE_PAD.radius + HOUSE_PAD.feather, fromPad);
+  return natural + (housePadHeight() - natural) * flatten;
+}
+
+let padHeight: number | null = null;
+/** Altura do piso da casa (calculada uma vez). */
+export function housePadHeight(): number {
+  padHeight ??= naturalHeight(HOUSE_PAD.x, HOUSE_PAD.z);
+  return padHeight;
+}
+
+function naturalHeight(x: number, z: number): number {
   const hill = hillHeight(x, z);
 
   // Ondulação natural, contida perto do despertar e sobre a colina (silhueta limpa).

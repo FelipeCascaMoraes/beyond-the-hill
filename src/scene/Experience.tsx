@@ -7,6 +7,7 @@ import { getQualitySettings } from "@/game/config/quality";
 import { useGameStore } from "@/game/state/gameStore";
 import { CameraRig } from "./camera/CameraRig";
 import { InteractionSystem } from "./interaction/InteractionSystem";
+import { AreaTriggers } from "./story/AreaTriggers";
 import { PlayerController } from "./player/PlayerController";
 import { World } from "./world/World";
 import { ZoneRenderer } from "./zones/ZoneRenderer";
@@ -34,6 +35,7 @@ export default function Experience() {
       <PlayerController />
       {/* Depois do jogador: usa a câmera já atualizada no mesmo frame. */}
       <InteractionSystem />
+      <AreaTriggers />
       <Suspense fallback={null}>
         <World />
         <ZoneRenderer />

@@ -1,6 +1,7 @@
 import { useLayoutEffect, useMemo, useRef } from "react";
-import { Object3D, type InstancedMesh } from "three";
+import { CanvasTexture, Object3D, SRGBColorSpace, type InstancedMesh } from "three";
 import type { PointOfInterest } from "@/content";
+import { HOUSE, HOUSE_WINDOW } from "@/game/world/house";
 import { createRandom } from "@/game/world/noise";
 import { terrainHeight } from "@/game/world/terrain";
 
@@ -194,6 +195,191 @@ function Gate() {
   );
 }
 
+// ── Objetos da casa abandonada ────────────────────────────────────────────
+// A base (y = 0) é o chão do terreno; o piso de madeira fica HOUSE.floorThickness acima.
+
+const FLOOR = HOUSE.floorThickness;
+
+let drawingTexture: CanvasTexture | null = null;
+
+/**
+ * Desenho de criança feito em código (sem imagem externa): a colina com o
+ * degrau à esquerda, a árvore no topo, o sol e três pessoas de mãos dadas.
+ */
+function getDrawingTexture(): CanvasTexture {
+  if (drawingTexture) return drawingTexture;
+  const canvas = document.createElement("canvas");
+  canvas.width = 256;
+  canvas.height = 192;
+  const ctx = canvas.getContext("2d");
+  if (ctx) {
+    ctx.fillStyle = "#e8dcc0";
+    ctx.fillRect(0, 0, 256, 192);
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    const crayon = (color: string, width: number, draw: () => void) => {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      draw();
+      ctx.stroke();
+    };
+    // Sol.
+    crayon("#d9a431", 4, () => ctx.arc(200, 38, 16, 0, Math.PI * 2));
+    // Colina: encosta longa, degrau, cume.
+    crayon("#6f7d3a", 5, () => {
+      ctx.moveTo(8, 150);
+      ctx.bezierCurveTo(50, 145, 70, 118, 96, 112);
+      ctx.bezierCurveTo(118, 108, 122, 70, 150, 66);
+      ctx.bezierCurveTo(180, 62, 205, 120, 248, 140);
+    });
+    // Árvore no topo.
+    crayon("#5a3e26", 4, () => {
+      ctx.moveTo(150, 66);
+      ctx.lineTo(150, 44);
+    });
+    crayon("#3f5a2a", 6, () => ctx.ellipse(150, 38, 20, 9, 0, 0, Math.PI * 2));
+    // Três pessoas de mãos dadas: grande, média, pequena.
+    const person = (x: number, height: number, color: string) =>
+      crayon(color, 3, () => {
+        const top = 182 - height;
+        ctx.moveTo(x + 6, top);
+        ctx.arc(x, top, 6, 0, Math.PI * 2);
+        ctx.moveTo(x, top + 6);
+        ctx.lineTo(x, top + height * 0.6);
+        ctx.lineTo(x - 7, 182);
+        ctx.moveTo(x, top + height * 0.6);
+        ctx.lineTo(x + 7, 182);
+      });
+    person(52, 52, "#35507a");
+    person(82, 46, "#8a3a3a");
+    person(106, 30, "#b56a2a");
+    crayon("#555", 2, () => {
+      ctx.moveTo(52, 150);
+      ctx.lineTo(82, 150);
+      ctx.lineTo(106, 164);
+    });
+  }
+  drawingTexture = new CanvasTexture(canvas);
+  drawingTexture.colorSpace = SRGBColorSpace;
+  return drawingTexture;
+}
+
+/** Desenho de criança preso na parede, um pouco torto. */
+function Drawing() {
+  const texture = useMemo(() => getDrawingTexture(), []);
+  return (
+    <mesh position={[0, FLOOR + 1.55, 0.02]} rotation-z={0.05}>
+      <planeGeometry args={[0.42, 0.32]} />
+      <meshLambertMaterial map={texture} />
+    </mesh>
+  );
+}
+
+const TABLE_TOP = 0.74;
+
+/** Mesa posta para três: pratos, duas cadeiras de pé e uma caída. */
+function Table() {
+  const legs: [number, number][] = [
+    [-0.62, -0.33],
+    [0.62, -0.33],
+    [-0.62, 0.33],
+    [0.62, 0.33],
+  ];
+  const plates: [number, number][] = [
+    [-0.45, -0.22],
+    [0.45, -0.22],
+    [0, 0.24],
+  ];
+  return (
+    <group position={[0, FLOOR, 0]}>
+      <mesh position={[0, TABLE_TOP, 0]}>
+        <boxGeometry args={[1.4, 0.06, 0.8]} />
+        <meshLambertMaterial color="#5e4a36" flatShading />
+      </mesh>
+      {legs.map(([x, z]) => (
+        <mesh key={`${x}${z}`} position={[x, TABLE_TOP / 2, z]}>
+          <boxGeometry args={[0.07, TABLE_TOP, 0.07]} />
+          <meshLambertMaterial color="#4d3c2b" />
+        </mesh>
+      ))}
+      {plates.map(([x, z]) => (
+        <mesh key={`${x}${z}`} position={[x, TABLE_TOP + 0.04, z]}>
+          <cylinderGeometry args={[0.12, 0.1, 0.02, 14]} />
+          <meshLambertMaterial color="#b9b1a0" />
+        </mesh>
+      ))}
+      <Chair position={[-0.45, 0, -0.62]} rotation={0} />
+      <Chair position={[0.45, 0, -0.6]} rotation={0.15} />
+      {/* A terceira cadeira, caída de costas no chão. */}
+      <group position={[0.1, 0.24, 0.95]} rotation={[-Math.PI / 2 + 0.1, 0.4, 0]}>
+        <Chair position={[0, 0, 0]} rotation={Math.PI} />
+      </group>
+    </group>
+  );
+}
+
+function Chair({ position, rotation }: { position: [number, number, number]; rotation: number }) {
+  return (
+    <group position={position} rotation-y={rotation}>
+      <mesh position={[0, 0.44, 0]}>
+        <boxGeometry args={[0.42, 0.05, 0.42]} />
+        <meshLambertMaterial color="#5a4633" flatShading />
+      </mesh>
+      <mesh position={[0, 0.7, -0.19]}>
+        <boxGeometry args={[0.42, 0.5, 0.04]} />
+        <meshLambertMaterial color="#5a4633" flatShading />
+      </mesh>
+      {CHAIR_LEGS.map(([x, z]) => (
+        <mesh key={`${x}${z}`} position={[x, 0.21, z]}>
+          <boxGeometry args={[0.04, 0.42, 0.04]} />
+          <meshLambertMaterial color="#4a3a2a" />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+const CHAIR_LEGS = [
+  [-0.18, -0.18],
+  [0.18, -0.18],
+  [-0.18, 0.18],
+  [0.18, 0.18],
+] as const;
+
+/** Cavalinho de madeira no parapeito, olhando para fora (para a colina). */
+function ToyHorse() {
+  const wood = "#9a7650";
+  return (
+    <group position={[0, HOUSE_WINDOW.sill, 0]} scale={1.3}>
+      <mesh position={[0, 0.07, 0]}>
+        <boxGeometry args={[0.06, 0.05, 0.14]} />
+        <meshLambertMaterial color={wood} flatShading />
+      </mesh>
+      <mesh position={[0, 0.12, 0.07]} rotation-x={-0.5}>
+        <boxGeometry args={[0.04, 0.07, 0.04]} />
+        <meshLambertMaterial color={wood} flatShading />
+      </mesh>
+      {[
+        [-0.02, -0.05],
+        [0.02, -0.05],
+        [-0.02, 0.05],
+        [0.02, 0.05],
+      ].map(([x, z]) => (
+        <mesh key={`${x}${z}`} position={[x, 0.025, z]}>
+          <boxGeometry args={[0.015, 0.05, 0.015]} />
+          <meshLambertMaterial color="#7d5e3e" />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
+/** A janela é parte da casa; aqui só existe o ponto de interação. */
+function WindowView() {
+  return <></>;
+}
+
 interface PoiVisualConfig {
   Visual: (props: VisualProps) => React.JSX.Element;
   /** Altura do alvo de interação acima da base (m). */
@@ -213,4 +399,9 @@ export const poiVisuals: Record<PoiKind, PoiVisualConfig> = {
   flowers: { Visual: Flowers, targetHeight: 0.55, targetRadius: 1.3, reach: 3.2, clearing: 2.4 },
   boulder: { Visual: Boulder, targetHeight: 0.6, targetRadius: 1.4, reach: 3.6, clearing: 2.6 },
   gate: { Visual: Gate, targetHeight: 0.8, targetRadius: 1.3, reach: 3.2, clearing: 2.4 },
+  // Dentro da casa: a grama é removida pela própria casa (clearing 0 = nenhuma extra).
+  drawing: { Visual: Drawing, targetHeight: FLOOR + 1.55, targetRadius: 0.35, reach: 2.4, clearing: 0 },
+  table: { Visual: Table, targetHeight: FLOOR + 0.8, targetRadius: 0.7, reach: 2.6, clearing: 0 },
+  "toy-horse": { Visual: ToyHorse, targetHeight: HOUSE_WINDOW.sill + 0.1, targetRadius: 0.25, reach: 2.2, clearing: 0 },
+  window: { Visual: WindowView, targetHeight: FLOOR + 1.5, targetRadius: 0.55, reach: 2.8, clearing: 0 },
 };

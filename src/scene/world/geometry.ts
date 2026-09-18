@@ -11,6 +11,7 @@ import {
 import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
 import { atmosphere } from "@/game/config/render";
 import { createRandom, fbm, smoothstep } from "@/game/world/noise";
+import { HOUSE, isInsideHouse } from "@/game/world/house";
 import { HILL, TERRAIN_HALF_SIZE, distanceToTrail, terrainHeight } from "@/game/world/terrain";
 
 // Geração procedural das geometrias do mundo (executa uma vez por montagem).
@@ -52,6 +53,10 @@ export function createTerrainGeometry(): BufferGeometry {
     color.lerpColors(ground, groundAlt, Math.min(1, smoothstep(0.45, 0.75, patches) * 0.7 + onHill * 0.5));
     color.multiplyScalar(0.85 + fbm(x * 0.2, z * 0.2, 2) * 0.3);
 
+    // Quintal de terra batida em volta da casa abandonada.
+    const fromHouse = Math.hypot(x - HOUSE.x, z - HOUSE.z);
+    if (fromHouse < 10) color.lerp(trailColor, (1 - smoothstep(4, 10, fromHouse)) * 0.6);
+
     // Terra batida da trilha, só perto do campo.
     if (Math.abs(z) < 120) {
       const trail = 1 - smoothstep(0.4, 1.4, distanceToTrail(x, z));
@@ -81,14 +86,18 @@ export interface GrassClearing {
   x: number;
   z: number;
   radius: number;
+  /** Altura relativa da grama no centro (padrão 0.15; 0 = sem grama, ex.: dentro da casa). */
+  floor?: number;
 }
 
-/** 1 fora das clareiras; cai suavemente até ~0.15 no centro delas. */
+/** 1 fora das clareiras; cai suavemente até `floor` no centro delas. */
 function clearingFactor(x: number, z: number, clearings: readonly GrassClearing[]): number {
   let factor = 1;
   for (const clearing of clearings) {
+    if (clearing.radius <= 0) continue;
+    const floor = clearing.floor ?? 0.15;
     const distance = Math.hypot(x - clearing.x, z - clearing.z);
-    factor = Math.min(factor, 0.15 + 0.85 * smoothstep(clearing.radius * 0.4, clearing.radius, distance));
+    factor = Math.min(factor, floor + (1 - floor) * smoothstep(clearing.radius * 0.4, clearing.radius, distance));
   }
   return factor;
 }
@@ -144,7 +153,8 @@ export function createGrassGeometry({
 
     params[i * 4] = random() * Math.PI * 2;
     params[i * 4 + 1] =
-      (0.3 + random() * 0.5) * clumps * (0.25 + 0.75 * edge) * trodden * clearingFactor(x, z, clearings);
+      (0.3 + random() * 0.5) * clumps * (0.25 + 0.75 * edge) * trodden * clearingFactor(x, z, clearings) *
+      (isInsideHouse(x, z) ? 0 : 1);
     // Folhas distantes mais largas para cobrir o chão com menos instâncias.
     params[i * 4 + 2] = (0.05 + random() * 0.05) * (1 + distanceFactor * 1.8);
     params[i * 4 + 3] = random();

@@ -46,6 +46,40 @@ export const pointsOfInterest = {
     memory: { id: "childhood-ride", prompt: "Tocar a porteira", afterDialogue: "poi-gate-after" },
     obstacleRadius: 1.4,
   },
+  // ── Dentro da casa abandonada (centro em -44, 12; ver game/world/house.ts) ──
+  houseDrawing: {
+    zone: "arrival",
+    kind: "drawing",
+    // Pendurado por dentro da parede oeste, virado para a porta.
+    position: [-46.86, 12.6],
+    rotation: Math.PI / 2,
+    prompt: "Examinar",
+    dialogue: "poi-house-drawing",
+  },
+  houseTable: {
+    zone: "arrival",
+    kind: "table",
+    position: [-44.3, 12.9],
+    prompt: "Examinar",
+    dialogue: "poi-house-table",
+    obstacleRadius: 0.85,
+  },
+  houseHorse: {
+    zone: "arrival",
+    kind: "toy-horse",
+    // No parapeito da janela norte, olhando para a colina.
+    position: [-43.62, 9.5],
+    rotation: Math.PI,
+    prompt: "Examinar",
+    dialogue: "poi-house-horse",
+  },
+  houseWindow: {
+    zone: "arrival",
+    kind: "window",
+    position: [-44.15, 9.5],
+    prompt: "Olhar pela janela",
+    dialogue: "poi-house-window",
+  },
   overlook: {
     zone: "arrival",
     kind: "boulder",

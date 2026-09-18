@@ -76,6 +76,42 @@ export const dialogues = {
     { speaker: "aysha", text: "Nada impede a passagem. Mesmo assim, ela está fechada." },
   ]),
 
+  // ── A casa abandonada ──────────────────────────────────────────────────
+  // Pistas: a colina e a árvore desenhadas por uma criança, uma família de
+  // três, um lugar ainda esperando alguém. Nada sobre como a família acabou.
+
+  // Ao se aproximar (não trava o movimento).
+  "house-approach": linear(
+    [
+      { speaker: "narrator", text: "Uma casa, sozinha no campo. A porta está entreaberta." },
+      { speaker: "aysha", text: "Tem alguém aí?" },
+    ],
+    { blocksMovement: false },
+  ),
+
+  "poi-house-drawing": linear(
+    [
+      { speaker: "narrator", text: "Um desenho de criança, preso na parede. Uma colina, uma árvore no topo e três pessoas de mãos dadas." },
+      { speaker: "aysha", text: "Fui eu que desenhei isso. Como pode estar aqui?" },
+    ],
+    { setsFlags: ["found-drawing"] },
+  ),
+
+  "poi-house-table": linear([
+    { speaker: "narrator", text: "Uma mesa posta para três. A poeira cobre tudo, menos uma das cadeiras." },
+    { speaker: "aysha", text: "Como se alguém ainda se sentasse aqui. Esperando." },
+  ]),
+
+  "poi-house-horse": linear([
+    { speaker: "narrator", text: "Um cavalinho de madeira no parapeito, virado para a janela." },
+    { speaker: "aysha", text: "Alguém o deixou olhando para a colina. De propósito." },
+  ]),
+
+  "poi-house-window": linear([
+    { speaker: "narrator", text: "Pela janela quebrada, a colina inteira cabe no quadro." },
+    { speaker: "aysha", text: "Quem morava aqui acordava todo dia olhando para ela." },
+  ]),
+
   // Depois de viver a memória da porteira.
   "poi-gate-after": linear([
     { speaker: "narrator", text: "A madeira está morna sob a mão dela." },
@@ -112,6 +148,13 @@ export const dialogues = {
     { speaker: "aysha", text: "Você já foi até aquela colina?" },
     { speaker: "narrator", text: "Victor demora a responder." },
     { speaker: "victor", text: "Não. Daqui ela parece perto. Não é." },
+  ]),
+
+  "victor-house": linear([
+    { speaker: "aysha", text: "Tem uma casa lá atrás. Com um desenho meu na parede." },
+    { speaker: "narrator", text: "Victor olha na direção da casa por um instante longo demais." },
+    { speaker: "victor", text: "O Além guarda pedaços de quem chega. Não quer dizer nada." },
+    { speaker: "victor", text: "Não fica muito tempo lá dentro." },
   ]),
 
   "victor-idle": linear([{ speaker: "victor", text: "Estou de olho no horizonte. Pode ficar tranquila." }]),

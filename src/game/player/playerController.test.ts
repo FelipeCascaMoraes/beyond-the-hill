@@ -21,7 +21,7 @@ const config: PlayerConfig = {
 
 const flat: PlayerEnvironment = {
   heightAt: () => 0,
-  bounds: { centerX: 0, centerZ: 0, radius: 10 },
+  bounds: [{ centerX: 0, centerZ: 0, radius: 10 }],
 };
 
 const idle: PlayerInput = { forward: 0, strafe: 0, lookDeltaX: 0, lookDeltaY: 0 };
@@ -62,7 +62,7 @@ test("para suavemente ao soltar as teclas", () => {
 
 test("nunca sai da área explorável", () => {
   const player = simulate(30, { ...idle, forward: 1 });
-  assert.ok(Math.hypot(player.x, player.z) <= flat.bounds.radius + 1e-9);
+  assert.ok(Math.hypot(player.x, player.z) <= flat.bounds[0].radius + 1e-9);
 });
 
 test("olhos acompanham a altura do terreno", () => {
@@ -95,4 +95,26 @@ test("não atravessa obstáculos e desliza pela lateral", () => {
   const separation = Math.hypot(player.x - 0.1, player.z + 3);
   assert.ok(separation >= 0.45 + config.bodyRadius - 1e-9, `separação ${separation}`);
   assert.ok(player.z < -3, "deslizou e passou pelo obstáculo");
+});
+
+test("área em dois círculos: passa pela sobreposição e não sai do segundo", () => {
+  // Campo (raio 10 na origem) + área lateral (raio 5 em z = -13): sobrepostos entre z -8 e -10.
+  const twoAreas: PlayerEnvironment = {
+    heightAt: () => 0,
+    bounds: [
+      { centerX: 0, centerZ: 0, radius: 10 },
+      { centerX: 0, centerZ: -13, radius: 5 },
+    ],
+  };
+  const player = simulate(20, { ...idle, forward: 1 }, twoAreas);
+  assert.ok(player.z < -12, `chegou à área lateral (z = ${player.z})`);
+  assert.ok(Math.hypot(player.x, player.z + 13) <= 5 + 1e-9, "não sai do segundo círculo");
+});
+
+test("paredes bloqueiam e deixam deslizar", () => {
+  const withWall: PlayerEnvironment = { ...flat, walls: [{ minX: -2, maxX: 2, minZ: -3.1, maxZ: -2.9 }] };
+  const blocked = simulate(3, { ...idle, forward: 1 }, withWall);
+  assert.ok(blocked.z >= -2.9 + config.bodyRadius - 1e-9, `parou antes da parede (z = ${blocked.z})`);
+  const sliding = simulate(4, { ...idle, forward: 1, strafe: 1 }, withWall);
+  assert.ok(sliding.x > 2 && sliding.z < -3.1, "contornou a ponta da parede");
 });

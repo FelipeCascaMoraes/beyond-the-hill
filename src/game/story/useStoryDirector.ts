@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { memories, storyBeats, type Memory, type MemoryId, type StoryBeatId } from "@/content";
 import { nextAutoMemory } from "@/game/memory/memoryLogic";
-import { selectCanInteract, useGameStore } from "@/game/state/gameStore";
+import { selectIsFree, useGameStore } from "@/game/state/gameStore";
 import { nextBeat } from "./beats";
 
 type GameStoreState = ReturnType<typeof useGameStore.getState>;
@@ -13,7 +13,7 @@ const eventKey = (event: PendingEvent | null) => (event ? `${event.kind}:${event
 
 /** Próximo evento, se o jogador estiver livre para recebê-lo. Momentos vêm antes de memórias. */
 function pendingEvent(state: GameStoreState): PendingEvent | null {
-  if (state.phase !== "playing" || !selectCanInteract(state)) return null;
+  if (state.phase !== "playing" || !selectIsFree(state)) return null;
   const beat = nextBeat(storyBeats, state.zone, state);
   if (beat) return { kind: "beat", id: beat };
   const memory = nextAutoMemory(memories, state);

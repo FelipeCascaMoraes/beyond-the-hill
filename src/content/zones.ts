@@ -4,7 +4,7 @@ import type { Zone } from "./types";
 const placeholder = {
   playerSpawn: [0, 0, 0],
   spawnLookAt: [0, 0, -10],
-  bounds: { center: [0, 0], radius: 30 },
+  bounds: [{ center: [0, 0], radius: 30 }],
 } as const;
 
 /** Zonas na ordem em que a jornada acontece. */
@@ -14,7 +14,11 @@ export const zones = {
     playerSpawn: [0, 0, 0],
     // Olhar voltado para a colina: horizonte no terço inferior, cume um pouco à direita.
     spawnLookAt: [-10, 95, -720],
-    bounds: { center: [0, 4], radius: 38 },
+    // O campo + a área da casa abandonada (à esquerda, atrás das flores).
+    bounds: [
+      { center: [0, 4], radius: 38 },
+      { center: [-44, 12], radius: 12 },
+    ],
   },
   houses: { title: "As Casas Abandonadas", ...placeholder },
   labyrinth: { title: "O Labirinto", ...placeholder },

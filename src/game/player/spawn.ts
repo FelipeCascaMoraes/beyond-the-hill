@@ -1,5 +1,6 @@
 import { npcs, pointsOfInterest, zones, type NpcId, type PointOfInterest, type ZoneId } from "@/content";
 import { playerConfig } from "@/game/config/player";
+import { HOUSE, houseWallBoxes } from "@/game/world/house";
 import { terrainHeight } from "@/game/world/terrain";
 import { lookAngles, type CircleObstacle, type PlayerEnvironment, type SpawnPose } from "./playerController";
 
@@ -16,7 +17,6 @@ export function getSpawnPose(zoneId: ZoneId): SpawnPose {
 }
 
 export function getPlayerEnvironment(zoneId: ZoneId): PlayerEnvironment {
-  const { center, radius } = zones[zoneId].bounds;
   const npcObstacles: CircleObstacle[] = (Object.keys(npcs) as NpcId[])
     .filter((id) => npcs[id].zone === zoneId)
     .map((id) => ({ x: npcs[id].position[0], z: npcs[id].position[1], radius: NPC_RADIUS }));
@@ -30,7 +30,8 @@ export function getPlayerEnvironment(zoneId: ZoneId): PlayerEnvironment {
 
   return {
     heightAt: terrainHeight,
-    bounds: { centerX: center[0], centerZ: center[1], radius },
+    bounds: zones[zoneId].bounds.map(({ center, radius }) => ({ centerX: center[0], centerZ: center[1], radius })),
     obstacles,
+    walls: HOUSE.zone === zoneId ? houseWallBoxes() : [],
   };
 }

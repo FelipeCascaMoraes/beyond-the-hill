@@ -2,7 +2,8 @@ import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { playerConfig } from "@/game/config/player";
 import { attachInput, consumeLook, readMovement } from "@/game/input/input";
-import { createPlayerState, headBobOffset, updatePlayer, type PlayerState } from "@/game/player/playerController";
+import { createPlayerState, headBobOffset, lookAngles, updatePlayer, type PlayerState } from "@/game/player/playerController";
+import { terrainHeight } from "@/game/world/terrain";
 import { getPlayerEnvironment, getSpawnPose } from "@/game/player/spawn";
 import { selectCanControl, useGameStore } from "@/game/state/gameStore";
 import { prefersReducedMotion } from "@/lib/motion";
@@ -29,6 +30,16 @@ export function PlayerController() {
   useEffect(() => {
     playerRef.current = createPlayerState(getSpawnPose(zone));
   }, [zone]);
+
+  // Só em desenvolvimento: window.__bthPlayer.teleport(x, z, olharX?, olharZ?, olharY?).
+  useEffect(() => {
+    if (process.env.NODE_ENV !== "development") return;
+    const teleport = (x: number, z: number, lookX = x, lookZ = z - 10, lookY?: number) => {
+      const eyeY = terrainHeight(x, z) + playerConfig.eyeHeight;
+      playerRef.current = createPlayerState({ x, z, eyeY, ...lookAngles(x, eyeY, z, lookX, lookY ?? eyeY, lookZ) });
+    };
+    Object.assign(window, { __bthPlayer: { teleport } });
+  }, []);
 
   useEffect(() => {
     if (!canControl) return;

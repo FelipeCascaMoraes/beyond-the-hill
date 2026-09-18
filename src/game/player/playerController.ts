@@ -35,10 +35,56 @@ export interface CircleObstacle {
   radius: number;
 }
 
+/** Obstáculo retangular alinhado aos eixos no plano XZ (paredes). */
+export interface BoxObstacle {
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+}
+
+/** Círculo da área explorável. */
+export interface BoundsCircle {
+  centerX: number;
+  centerZ: number;
+  radius: number;
+}
+
 export interface PlayerEnvironment {
   heightAt: (x: number, z: number) => number;
-  bounds: { centerX: number; centerZ: number; radius: number };
+  /** Área explorável: união de círculos (ex.: o campo + a área da casa). */
+  bounds: readonly BoundsCircle[];
   obstacles?: readonly CircleObstacle[];
+  walls?: readonly BoxObstacle[];
+}
+
+/** Círculo com mais folga para a posição (o "mais por dentro"); pode estar fora de todos. */
+function roomiestCircle(bounds: readonly BoundsCircle[], x: number, z: number) {
+  let best = bounds[0];
+  let bestSlack = -Infinity;
+  for (const circle of bounds) {
+    const slack = circle.radius - Math.hypot(x - circle.centerX, z - circle.centerZ);
+    if (slack > bestSlack) {
+      best = circle;
+      bestSlack = slack;
+    }
+  }
+  return { circle: best, slack: bestSlack };
+}
+
+/** Empurra um ponto (com raio) para fora de um retângulo, pelo lado mais próximo. */
+function pushOutOfBox(state: { x: number; z: number }, box: BoxObstacle, radius: number): void {
+  const minX = box.minX - radius;
+  const maxX = box.maxX + radius;
+  const minZ = box.minZ - radius;
+  const maxZ = box.maxZ + radius;
+  if (state.x <= minX || state.x >= maxX || state.z <= minZ || state.z >= maxZ) return;
+  const exits = [state.x - minX, maxX - state.x, state.z - minZ, maxZ - state.z];
+  const smallest = Math.min(...exits);
+  if (smallest === exits[0]) state.x = minX;
+  else if (smallest === exits[1]) state.x = maxX;
+  else if (smallest === exits[2]) state.z = minZ;
+  else state.z = maxZ;
 }
 
 export interface SpawnPose {
@@ -126,17 +172,18 @@ export function updatePlayer(
   state.velocityX += (wishX - state.velocityX) * accel;
   state.velocityZ += (wishZ - state.velocityZ) * accel;
 
-  // Limite suave: perto da borda, o passo para fora perde força.
-  const { centerX, centerZ, radius } = environment.bounds;
-  let offsetX = state.x - centerX;
-  let offsetZ = state.z - centerZ;
-  let distance = Math.hypot(offsetX, offsetZ);
+  // Limite suave: perto da borda, o passo para fora perde força. Usa o círculo
+  // com mais folga, então a passagem entre círculos que se sobrepõem fica livre.
+  const soft = roomiestCircle(environment.bounds, state.x, state.z);
+  const offsetX = state.x - soft.circle.centerX;
+  const offsetZ = state.z - soft.circle.centerZ;
+  const distance = Math.hypot(offsetX, offsetZ);
   if (distance > 1e-4) {
     const normalX = offsetX / distance;
     const normalZ = offsetZ / distance;
     const outward = state.velocityX * normalX + state.velocityZ * normalZ;
     if (outward > 0) {
-      const resistance = smoothstep(radius - config.boundsSoftMargin, radius, distance);
+      const resistance = smoothstep(soft.circle.radius - config.boundsSoftMargin, soft.circle.radius, distance);
       state.velocityX -= normalX * outward * resistance;
       state.velocityZ -= normalZ * outward * resistance;
     }
@@ -156,13 +203,18 @@ export function updatePlayer(
     state.z = obstacle.z + (awayZ / separation) * minDistance;
   }
 
-  // Limite rígido: nunca sai do círculo, desliza pela borda.
-  offsetX = state.x - centerX;
-  offsetZ = state.z - centerZ;
-  distance = Math.hypot(offsetX, offsetZ);
-  if (distance > radius) {
-    state.x = centerX + (offsetX / distance) * radius;
-    state.z = centerZ + (offsetZ / distance) * radius;
+  // Paredes: empurra para fora pelo lado mais próximo (desliza ao longo delas).
+  for (const wall of environment.walls ?? []) pushOutOfBox(state, wall, config.bodyRadius);
+
+  // Limite rígido: nunca sai da área; volta para a borda do círculo mais próximo.
+  const hard = roomiestCircle(environment.bounds, state.x, state.z);
+  if (hard.slack < 0) {
+    const { centerX, centerZ, radius } = hard.circle;
+    const awayX = state.x - centerX;
+    const awayZ = state.z - centerZ;
+    const away = Math.hypot(awayX, awayZ);
+    state.x = centerX + (awayX / away) * radius;
+    state.z = centerZ + (awayZ / away) * radius;
   }
 
   // Chão: os olhos acompanham o terreno com suavização.

@@ -26,6 +26,7 @@ export const npcs = {
       "arrival-meeting",
       "victor-machines",
       { dialogue: "victor-hill", requires: afterHillFeelsFamiliar },
+      { dialogue: "victor-house", requires: { flags: ["found-drawing"] } },
       "victor-idle",
     ],
   },
