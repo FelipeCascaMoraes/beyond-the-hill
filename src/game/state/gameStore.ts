@@ -6,6 +6,7 @@ import {
   type DialogueId,
   type EndingChoice,
   type MemoryId,
+  type MemoryTone,
   type StoryFlag,
   type ZoneId,
 } from "@/content";
@@ -17,7 +18,7 @@ import {
   introducedBy,
   type DialogueCursor,
 } from "@/game/dialogue/runner";
-import { canActivate, isLastFragment, memoryStatus, type MemoryStatus } from "@/game/memory/memoryLogic";
+import { canActivate, fragmentTone, isLastFragment, memoryStatus, type MemoryStatus } from "@/game/memory/memoryLogic";
 
 export type GamePhase = "title" | "playing" | "ending";
 
@@ -203,6 +204,13 @@ export const selectMemoryStatus =
   (id: MemoryId) =>
   (state: GameState): MemoryStatus =>
     memoryStatus(id, memories[id], state);
+
+/**
+ * Clima da lembrança em andamento (pode virar no meio dela), ou `null` fora
+ * de uma. É o que a luz da cena, a câmera e o som seguem.
+ */
+export const selectActiveMemoryTone = (state: GameState): MemoryTone | null =>
+  state.activeMemory ? fragmentTone(memories[state.activeMemory.id], state.activeMemory.fragment) : null;
 
 /**
  * Pode iniciar uma interação? Sempre que pode controlar: durante uma fala de

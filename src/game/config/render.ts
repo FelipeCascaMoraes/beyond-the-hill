@@ -1,3 +1,5 @@
+import type { MemoryTone } from "../../content/types.ts";
+
 // Parâmetros de renderização e atmosfera compartilhados pela cena.
 
 type Vec3Tuple = [number, number, number];
@@ -47,3 +49,26 @@ export const atmosphere = {
   grassTipColor: "#8c9460",
   moteColor: "#ffe6b8",
 } as const;
+
+/** Intensidade e cor das duas luzes do mundo (ver scene/world/Lighting). */
+interface LightMood {
+  /** Sol (direcional) e céu (hemisférica). */
+  sun: number;
+  sky: number;
+  sunColor: string;
+  skyColor: string;
+  /** Luz que sobe do chão, na hemisférica. */
+  groundColor: string;
+}
+
+/**
+ * Como a luz do mundo reage a uma lembrança. A cena não corta para outro lugar:
+ * é o mesmo campo que esquenta quando a memória é boa e perde a cor quando não é.
+ */
+export const memoryMood = {
+  idle: { sun: 1.8, sky: 1.9, sunColor: atmosphere.sunColor, skyColor: "#d3d4d0", groundColor: "#4a4430" },
+  warm: { sun: 2.7, sky: 1.5, sunColor: "#ffc98a", skyColor: "#e7d4ad", groundColor: "#5c4a26" },
+  cold: { sun: 0.6, sky: 0.9, sunColor: "#a6b6c6", skyColor: "#8d9aab", groundColor: "#282d34" },
+} as const satisfies Record<"idle" | MemoryTone, LightMood>;
+
+export type MemoryMoodId = keyof typeof memoryMood;

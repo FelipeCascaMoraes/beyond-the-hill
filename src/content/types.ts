@@ -165,6 +165,11 @@ export interface MemoryFragment {
   soft?: boolean;
   /** Tempo em tela (s) quando a memória avança sozinha. */
   duration?: number;
+  /**
+   * Vira o clima da lembrança a partir daqui: luz, som e câmera acompanham.
+   * Sem isto, o fragmento herda o clima do fragmento anterior.
+   */
+  tone?: MemoryTone;
 }
 
 /** Clima visual da lembrança. */

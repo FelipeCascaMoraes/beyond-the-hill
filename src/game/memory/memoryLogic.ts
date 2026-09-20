@@ -1,4 +1,4 @@
-import type { Memory } from "../../content/types.ts";
+import type { Memory, MemoryTone } from "../../content/types.ts";
 import { meetsRequirement, type StoryContext } from "../story/requirements.ts";
 
 // Regras genéricas de memórias. Lógica pura: não conhece nenhuma memória específica.
@@ -27,6 +27,31 @@ export function nextAutoMemory<Id extends string>(
 
 export const isLastFragment = (memory: Memory, index: number): boolean => index >= memory.fragments.length - 1;
 
+/** Clima padrão de uma lembrança. */
+export const DEFAULT_TONE: MemoryTone = "warm";
+
+/**
+ * Clima em vigor num fragmento: o último declarado até ele (uma memória pode
+ * virar no meio), ou o clima da própria memória.
+ */
+export function fragmentTone(memory: Memory, index: number): MemoryTone {
+  for (let i = Math.min(index, memory.fragments.length - 1); i >= 0; i--) {
+    const tone = memory.fragments[i].tone;
+    if (tone) return tone;
+  }
+  return memory.tone ?? DEFAULT_TONE;
+}
+
+/** Climas pelos quais a memória passa, na ordem em que aparecem (nunca vazio). */
+export function memoryTones(memory: Memory): readonly MemoryTone[] {
+  const tones: MemoryTone[] = [];
+  for (let index = 0; index < memory.fragments.length; index++) {
+    const tone = fragmentTone(memory, index);
+    if (!tones.includes(tone)) tones.push(tone);
+  }
+  return tones.length ? tones : [memory.tone ?? DEFAULT_TONE];
+}
+
 /** Tempo padrão de um fragmento em memórias que avançam sozinhas (s). */
 export const DEFAULT_FRAGMENT_DURATION = 2.5;
 
@@ -47,6 +72,9 @@ export function validateMemory(memory: Memory): string[] {
     if (!fragment.text.trim()) problems.push(`fragmento ${index} sem texto`);
     if (fragment.duration !== undefined && fragment.duration < 1) problems.push(`fragmento ${index} curto demais para ler`);
   });
+  if (memory.fragments[0]?.tone && memory.fragments[0].tone !== (memory.tone ?? DEFAULT_TONE)) {
+    problems.push("o primeiro fragmento vira o clima: declare-o na memória");
+  }
   if (memory.trigger.type === "auto" && memory.trigger.delay < 0) problems.push("atraso negativo");
   return problems;
 }

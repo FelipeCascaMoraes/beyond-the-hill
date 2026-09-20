@@ -72,6 +72,7 @@ export const pointsOfInterest = {
     rotation: Math.PI,
     prompt: "Examinar",
     dialogue: "poi-house-horse",
+    memory: { id: "parents-night", prompt: "Pegar o cavalinho", afterDialogue: "poi-house-horse-after" },
   },
   houseWindow: {
     zone: "arrival",

@@ -93,6 +93,7 @@ export const dialogues = {
     [
       { speaker: "narrator", text: "Um desenho de criança, preso na parede. Uma colina, uma árvore no topo e três pessoas de mãos dadas." },
       { speaker: "aysha", text: "Fui eu que desenhei isso. Como pode estar aqui?" },
+      { speaker: "narrator", text: "No parapeito da janela, o cavalinho de madeira parece esperar." },
     ],
     { setsFlags: ["found-drawing"] },
   ),
@@ -110,6 +111,14 @@ export const dialogues = {
   "poi-house-window": linear([
     { speaker: "narrator", text: "Pela janela quebrada, a colina inteira cabe no quadro." },
     { speaker: "aysha", text: "Quem morava aqui acordava todo dia olhando para ela." },
+  ]),
+
+  // Depois de viver a memória da noite. A Aysha ainda não tem as palavras:
+  // sabe o que perdeu, não sabe como, nem por quem.
+  "poi-house-horse-after": linear([
+    { speaker: "narrator", text: "O cavalinho cabe na mão dela como se nunca tivesse saído." },
+    { speaker: "aysha", text: "Eu esperei a manhã inteira. Eles não subiram." },
+    { speaker: "narrator", text: "Ela devolve o cavalinho ao parapeito, virado para a colina." },
   ]),
 
   // Depois de viver a memória da porteira.

@@ -7,6 +7,7 @@ import { getQualitySettings } from "@/game/config/quality";
 import { useGameStore } from "@/game/state/gameStore";
 import { CameraRig } from "./camera/CameraRig";
 import { InteractionSystem } from "./interaction/InteractionSystem";
+import { MemoryCamera } from "./memory/MemoryCamera";
 import { AreaTriggers } from "./story/AreaTriggers";
 import { PlayerController } from "./player/PlayerController";
 import { World } from "./world/World";
@@ -33,7 +34,8 @@ export default function Experience() {
       <color attach="background" args={[atmosphere.horizonColor]} />
       <CameraRig />
       <PlayerController />
-      {/* Depois do jogador: usa a câmera já atualizada no mesmo frame. */}
+      {/* Depois do jogador: somam-se à câmera já atualizada no mesmo frame. */}
+      <MemoryCamera />
       <InteractionSystem />
       <AreaTriggers />
       <Suspense fallback={null}>
