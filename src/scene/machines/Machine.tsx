@@ -4,6 +4,7 @@ import { Color, type Group, type Mesh, type MeshBasicMaterial } from "three";
 import { machineAudio } from "@/audio/machineAudio";
 import { machines, type MachineId } from "@/content";
 import { isSheltered, machineKeepOut } from "@/game/machine/machineEnvironment";
+import { areMachinesPaused } from "@/game/debug/devFlags";
 import { alertOf, createMachineActor, updateMachine, type MachineAlert } from "@/game/machine/machineLogic";
 import { selectDialogueBlocksMovement, useGameStore } from "@/game/state/gameStore";
 import { terrainHeight } from "@/game/world/terrain";
@@ -51,7 +52,12 @@ export function Machine({ id }: { id: MachineId }) {
     const state = useGameStore.getState();
     const actor = actorRef.current;
     const frozen =
-      state.phase !== "playing" || state.captured || state.activeMemory !== null || selectDialogueBlocksMovement(state);
+      state.phase !== "playing" ||
+      state.captured ||
+      state.traveling !== null ||
+      state.activeMemory !== null ||
+      selectDialogueBlocksMovement(state) ||
+      areMachinesPaused();
 
     if (!frozen) {
       const target = {
