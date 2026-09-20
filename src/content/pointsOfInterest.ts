@@ -133,12 +133,15 @@ export const pointsOfInterest = {
     dialogue: "poi-lab-exit",
     obstacleRadius: 1.3,
   },
+  // A pedra virada para a colina, como um banco. Depois de reconhecer os dois,
+  // é sentada aqui que a Aysha lembra do resto — inclusive do fim.
   overlook: {
     zone: "arrival",
     kind: "boulder",
     position: [11, -29],
     prompt: "Olhar a colina",
     dialogue: "poi-overlook",
+    memory: { id: "after", prompt: "Sentar na pedra", afterDialogue: "poi-overlook-after" },
     obstacleRadius: 1.3,
   },
 } as const satisfies Record<string, PointOfInterest>;

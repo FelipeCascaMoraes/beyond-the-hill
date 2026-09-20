@@ -17,6 +17,7 @@ export const npcs = {
       { dialogue: "cassandra-hill", requires: afterHillFeelsFamiliar },
       // Ela desconversa sobre o que existe do outro lado do campo.
       { dialogue: "cassandra-machine", requires: { flags: ["machine-seen"] } },
+      { dialogue: "cassandra-after-truth", requires: { flags: ["they-lied"] } },
       "cassandra-idle",
     ],
   },
@@ -30,6 +31,7 @@ export const npcs = {
       { dialogue: "victor-hill", requires: afterHillFeelsFamiliar },
       { dialogue: "victor-house", requires: { flags: ["found-drawing"] } },
       { dialogue: "victor-machine", requires: { flags: ["machine-seen"] } },
+      { dialogue: "victor-after-truth", requires: { flags: ["they-lied"] } },
       "victor-idle",
     ],
   },

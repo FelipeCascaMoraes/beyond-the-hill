@@ -13,6 +13,10 @@ export const storyFlags = [
   "machine-caught",
   "hunt-began",
   "labyrinth-found",
+  "saw-them-again",
+  "guides-known",
+  "own-death",
+  "they-lied",
 ] as const;
 export type StoryFlag = (typeof storyFlags)[number];
 
@@ -48,6 +52,13 @@ export const storyBeats = {
     dialogue: "arrival-hill-familiar",
     requires: { flags: ["met-guides"], seenAtLeast: { dialogues: arrivalPoiDialogues, count: 3 } },
     delay: 2.5,
+  },
+  // Depois de lembrar da própria morte, a conta fecha sozinha.
+  "guides-lied": {
+    zone: "arrival",
+    dialogue: "guides-lied",
+    requires: { memories: ["after"] },
+    delay: 3,
   },
   // Depois da primeira lembrança o Além mostra os dentes: algo ronda o campo.
   "machine-arrives": {

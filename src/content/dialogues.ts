@@ -214,6 +214,38 @@ export const dialogues = {
     { setsFlags: ["machine-caught"] },
   ),
 
+  // ── O reconhecimento ───────────────────────────────────────────────────
+  // Nada é dito na cara deles. A Aysha entende, guarda, e passa a olhar
+  // diferente — o jogador entende junto, pelas mesmas peças.
+
+  // De volta ao campo, vendo os dois de longe (não trava o movimento).
+  "guides-again": linear(
+    [
+      { speaker: "narrator", text: "Do outro lado do campo, os dois esperam onde sempre estiveram." },
+      { speaker: "aysha", text: "Um homem e uma mulher." },
+      { speaker: "narrator", text: "O chapéu dele. O casaco dela, comprido até os pés." },
+    ],
+    { blocksMovement: false, setsFlags: ["saw-them-again"] },
+  ),
+
+  "poi-overlook-after": linear([
+    { speaker: "narrator", text: "A pedra está morna. Daqui a colina cabe inteira nos olhos." },
+    { speaker: "aysha", text: "Foi assim que eu cheguei. Deitada na grama, olhando para cima." },
+  ]),
+
+  // Depois da última lembrança. Ela não acusa ninguém ainda: ela conta.
+  "guides-lied": linear(
+    [
+      { speaker: "narrator", text: "Aysha fica muito tempo parada, olhando a trilha onde os dois esperam." },
+      { speaker: "aysha", text: "Eles já estavam aqui quando eu cheguei. Esperando." },
+      { speaker: "aysha", text: "\"A memória demora a chegar aqui\", ele disse. \"Fica perto da gente\", ela disse." },
+      { speaker: "narrator", text: "Ela se lembra do olhar rápido que os dois trocaram quando ela disse o próprio nome." },
+      { speaker: "aysha", text: "Eles sabiam. Desde o primeiro instante, eles sabiam quem eu era." },
+      { speaker: "narrator", text: "A colina continua lá, do outro lado do campo. Mais perto do que parecia." },
+    ],
+    { setsFlags: ["they-lied"] },
+  ),
+
   // ── Conversas seguintes ────────────────────────────────────────────────
   "cassandra-hill": linear([
     { speaker: "aysha", text: "Aquela colina... eu sinto que já estive lá." },
@@ -255,6 +287,24 @@ export const dialogues = {
     { speaker: "cassandra", text: "Fica deste lado do campo, perto da gente, e ela não te alcança." },
     { speaker: "aysha", text: "E do outro lado?" },
     { speaker: "cassandra", text: "Do outro lado não tem nada que valha a corrida." },
+  ]),
+
+  // Depois que a Aysha sabe. Os dois seguem amáveis; é isso que incomoda.
+  "cassandra-after-truth": linear([
+    { speaker: "cassandra", text: "Você está diferente. Lembrou de alguma coisa?" },
+    { speaker: "narrator", text: "Aysha demora a responder." },
+    { speaker: "aysha", text: "De um campo. De um cavalo." },
+    { speaker: "cassandra", text: "Coisas boas, então. Fica com essas." },
+    { speaker: "narrator", text: "A mão dela alisa o casaco comprido, devagar, até o fim." },
+  ]),
+
+  "victor-after-truth": linear([
+    { speaker: "aysha", text: "Victor. Há quanto tempo vocês dois estão aqui?" },
+    { speaker: "narrator", text: "Ele ajeita o chapéu antes de falar." },
+    { speaker: "victor", text: "Tempo não conta aqui. Você vai ver." },
+    { speaker: "aysha", text: "Mas vocês chegaram antes de mim." },
+    { speaker: "victor", text: "Todo mundo chega antes de alguém." },
+    { speaker: "narrator", text: "Ele olha para a colina pela primeira vez desde que ela o conhece." },
   ]),
 
   "victor-idle": linear([{ speaker: "victor", text: "Estou de olho no horizonte. Pode ficar tranquila." }]),

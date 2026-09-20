@@ -37,6 +37,8 @@ export interface AreaTrigger {
   center: readonly [number, number];
   radius: number;
   dialogue: DialogueId;
+  /** Enquanto não se cumprir, o lugar não diz nada: o mesmo chão, outra hora. */
+  requires?: Requirement;
 }
 
 // ── Diálogos ─────────────────────────────────────────────────────────────

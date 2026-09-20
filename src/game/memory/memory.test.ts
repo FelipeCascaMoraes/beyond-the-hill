@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { memories } from "../../content/memories.ts";
+import { memories, memoryIds } from "../../content/memories.ts";
+import { storyBeats, storyFlags } from "../../content/story.ts";
+import { nextBeat } from "../story/beats.ts";
 import type { Memory } from "../../content/types.ts";
 import {
   canActivate,
@@ -140,6 +142,69 @@ test("terceira memória: só depois da noite, escondida no labirinto, 15–30 s"
   // Cassandra e Victor ainda não podem ser nomeados aqui.
   const texto = memory.fragments.map((fragment) => fragment.text).join(" ");
   assert.ok(!/Cassandra|Victor/.test(texto), "os nomes ainda não aparecem");
+});
+
+test("quarta memória: precisa de ter lido o papel e de olhar os dois de novo", () => {
+  const memory: Memory = memories["the-two"];
+  const read = { recoveredMemories: ["the-names" as const] };
+  assert.equal(memoryStatus("the-two", memory, context(read)), "locked", "sem voltar e olhar para eles");
+  assert.equal(memoryStatus("the-two", memory, context({ flags: ["saw-them-again"] })), "locked", "sem ter lido o papel");
+  assert.equal(memoryStatus("the-two", memory, context({ ...read, flags: ["saw-them-again"] })), "unlocked");
+  // Esta é a única que vem sozinha: é o reconhecimento, não uma escolha.
+  assert.equal(nextAutoMemory(memories, context({ ...read, flags: ["saw-them-again"] })), "the-two");
+
+  const texto = memory.fragments.map((fragment) => fragment.text).join(" ");
+  assert.ok(/Victor/.test(texto) && /Cassandra/.test(texto), "aqui os nomes finalmente aparecem");
+  const seconds = totalDuration(memory);
+  assert.ok(seconds >= 15 && seconds <= 30, `duração ${seconds}s`);
+});
+
+test("quinta memória: a vida depois e a morte, terminando na primeira imagem do jogo", () => {
+  const memory: Memory = memories["after"];
+  assert.equal(memoryStatus("after", memory, context()), "locked");
+  assert.equal(memoryStatus("after", memory, context({ recoveredMemories: ["the-two"] })), "unlocked");
+  const sequence = memory.fragments.map((_, index) => fragmentTone(memory, index));
+  const turns = sequence.filter((tone, index) => index === 0 || tone !== sequence[index - 1]);
+  assert.deepEqual(turns, ["cold", "warm", "cold"], "o vazio, os anos mornos, a última noite");
+  const seconds = totalDuration(memory);
+  assert.ok(seconds >= 15 && seconds <= 30, `duração ${seconds}s`);
+  // Fecha exatamente onde o jogo abre: grama, luz de fim de tarde, a colina.
+  const last = memory.fragments[memory.fragments.length - 1];
+  assert.ok(/colina/.test(last.text), `último fragmento: "${last.text}"`);
+});
+
+test("as cinco lembranças vêm em ordem: cada uma depende da anterior", () => {
+  assert.deepEqual([...memoryIds], ["childhood-ride", "parents-night", "the-names", "the-two", "after"]);
+
+  // Pular uma lembrança não abre a seguinte: nem com todos os marcos da história.
+  for (let index = 1; index < memoryIds.length; index++) {
+    const id = memoryIds[index];
+    const withoutPrevious = memoryIds.slice(0, index - 1);
+    const status = memoryStatus(id, memories[id], context({ flags: [...storyFlags], recoveredMemories: withoutPrevious }));
+    assert.equal(status, "locked", `"${id}" abriu sem "${memoryIds[index - 1]}"`);
+  }
+
+  // Nenhuma lembrança dura mais que meio minuto: são fragmentos, não vídeos.
+  for (const id of memoryIds) {
+    const seconds = totalDuration(memories[id]);
+    assert.ok(seconds <= 30, `"${id}" dura ${seconds}s`);
+  }
+});
+
+test("depois da quinta lembrança vem o entendimento — e não o final", () => {
+  const lived = {
+    flags: ["met-guides", "hill-familiar", "first-memory", "found-drawing", "parents-lost", "hunt-began", "guides-known", "own-death"],
+    seenDialogues: ["arrival-meeting", "arrival-encourage", "arrival-hill-familiar", "machine-arrives", "guides-again"],
+    recoveredMemories: [...memoryIds],
+  } as const;
+  const beat = nextBeat(storyBeats, "arrival", context(lived));
+  assert.equal(beat, "guides-lied", "o jogo conta a mentira, sem confronto");
+  assert.equal(storyBeats["guides-lied"].requires.memories?.[0], "after");
+
+  // E depois disso o jogo para: nada empurra a Aysha para um desfecho ainda.
+  const afterwards = context({ ...lived, seenDialogues: [...lived.seenDialogues, "guides-lied"], flags: [...lived.flags, "they-lied"] });
+  assert.equal(nextBeat(storyBeats, "arrival", afterwards), null);
+  assert.equal(nextAutoMemory(memories, afterwards), null);
 });
 
 test("a porteira vira passagem depois das duas primeiras lembranças", () => {

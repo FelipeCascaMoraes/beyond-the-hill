@@ -18,7 +18,7 @@ export function AreaTriggers() {
 
     const state = useGameStore.getState();
     if (!selectIsFree(state)) return;
-    const id = areaTriggerAt(areaTriggers, state.zone, camera.position.x, camera.position.z, state.seenDialogues);
+    const id = areaTriggerAt(areaTriggers, state.zone, camera.position.x, camera.position.z, state);
     if (id) state.startDialogue(areaTriggers[id].dialogue);
   });
 

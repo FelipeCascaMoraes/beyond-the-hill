@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { areaTriggers } from "../../content/areas.ts";
+import type { DialogueId } from "../../content/dialogues.ts";
+import type { StoryFlag } from "../../content/story.ts";
 import { pointsOfInterest } from "../../content/pointsOfInterest.ts";
 import { zones } from "../../content/zones.ts";
 import { areaTriggerAt } from "../story/areaTriggers.ts";
@@ -36,7 +38,18 @@ test("a casa está dentro da área explorável da zona", () => {
 });
 
 test("gatilho de área: dispara dentro do raio, uma vez", () => {
-  assert.equal(areaTriggerAt(areaTriggers, "arrival", 0, 0, []), null);
-  assert.equal(areaTriggerAt(areaTriggers, "arrival", HOUSE.x + 5, HOUSE.z, []), "house-approach");
-  assert.equal(areaTriggerAt(areaTriggers, "arrival", HOUSE.x + 5, HOUSE.z, ["house-approach"]), null);
+  const context = (seenDialogues: readonly DialogueId[] = [], flags: readonly StoryFlag[] = []) => ({
+    flags,
+    seenDialogues,
+    recoveredMemories: [],
+  });
+  assert.equal(areaTriggerAt(areaTriggers, "arrival", 0, 0, context()), null);
+  assert.equal(areaTriggerAt(areaTriggers, "arrival", HOUSE.x + 5, HOUSE.z, context()), "house-approach");
+  assert.equal(areaTriggerAt(areaTriggers, "arrival", HOUSE.x + 5, HOUSE.z, context(["house-approach"])), null);
+
+  // Um lugar com condição fica calado até a história chegar nele.
+  const guides = areaTriggers["guides-again"];
+  const [gx, gz] = guides.center;
+  assert.equal(areaTriggerAt(areaTriggers, "arrival", gx, gz, context()), null, "antes da caçada, não diz nada");
+  assert.equal(areaTriggerAt(areaTriggers, "arrival", gx, gz, context([], ["hunt-began"])), "guides-again");
 });
