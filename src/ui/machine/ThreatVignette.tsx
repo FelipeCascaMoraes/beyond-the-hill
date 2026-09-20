@@ -24,7 +24,7 @@ export function ThreatVignette() {
       <div
         className={`absolute inset-0 transition-opacity duration-700 ${level.veil} ${level.pulse} bg-[radial-gradient(ellipse_at_center,transparent_45%,rgba(90,10,6,0.55)_100%)]`}
       />
-      {threat === "chase" && (
+      {threat !== "calm" && (
         <p className="absolute inset-x-0 bottom-[14vh] text-center text-[0.7rem] tracking-[0.4em] text-red-100/70 uppercase [text-shadow:0_1px_10px_rgba(0,0,0,0.8)]">
           Shift para correr
         </p>

@@ -1,6 +1,8 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { machines } from "../../content/machines.ts";
+import { zones } from "../../content/zones.ts";
+import { HOUSE } from "../world/house.ts";
 import { playerConfig } from "../config/player.ts";
 import type { MachineDefinition } from "../../content/types.ts";
 import {
@@ -148,9 +150,55 @@ test("as máquinas do jogo são válidas e dão chance de fuga", () => {
   }
 });
 
-test("a máquina do campo deixa livres a trilha dos guias e a casa", () => {
+/**
+ * O gargalo: a única passagem entre o campo e a área da casa, onde os dois
+ * círculos da zona se encontram. Se uma máquina guardar este ponto, quem
+ * entra na casa não tem como voltar — a desistência por território nunca
+ * dispara e não há desvio.
+ */
+function houseNeck() {
+  const [field, house] = zones.arrival.bounds;
+  const distance = Math.hypot(house.center[0] - field.center[0], house.center[1] - field.center[1]);
+  const ux = (house.center[0] - field.center[0]) / distance;
+  const uz = (house.center[1] - field.center[1]) / distance;
+  return {
+    x: (field.center[0] + field.radius * ux + house.center[0] - house.radius * ux) / 2,
+    z: (field.center[1] + field.radius * uz + house.center[1] - house.radius * uz) / 2,
+  };
+}
+
+test("nenhuma máquina guarda a única passagem para a casa", () => {
+  const neck = houseNeck();
+  for (const [id, machine] of Object.entries(machines)) {
+    if (machine.zone !== "arrival") continue;
+    assert.equal(inTerritory(neck, machine), false, `"${id}" acampa no gargalo da casa`);
+    assert.equal(inTerritory({ x: HOUSE.x, z: HOUSE.z }, machine), false, `"${id}" persegue até dentro da casa`);
+  }
+});
+
+test("a máquina do campo deixa livres a trilha dos guias e as duas pontas da travessia", () => {
   const sentinel = machines["field-sentinel"];
   assert.equal(inTerritory({ x: 0, z: 0 }, sentinel), false, "onde a Aysha desperta");
   assert.equal(inTerritory({ x: -2.4, z: -13 }, sentinel), false, "onde Cassandra espera");
-  assert.equal(inTerritory({ x: -44, z: 12 }, sentinel), true, "a casa fica dentro: é abrigo, não fuga");
+
+  // E a ronda dela cabe inteira no território: ninguém patrulha fora de casa.
+  for (const [x, z] of sentinel.route) {
+    assert.equal(inTerritory({ x, z }, sentinel), true, `ponto de rota (${x}, ${z})`);
+  }
+});
+
+test("dá para escapar da máquina do campo correndo até qualquer uma das pontas", () => {
+  const sentinel = machines["field-sentinel"];
+  const neck = houseNeck();
+  const [centerX, centerZ] = sentinel.territory.center;
+  // Do centro do território até sair dele, pelos dois lados.
+  const paraOGargalo = Math.hypot(neck.x - centerX, neck.z - centerZ) - sentinel.territory.radius;
+  const paraATrilha = Math.hypot(0 - centerX, 0 - centerZ) - sentinel.territory.radius;
+  assert.ok(paraOGargalo > 0 && paraOGargalo < 8, `gargalo a ${paraOGargalo.toFixed(1)} m fora do território`);
+  assert.ok(paraATrilha > 0 && paraATrilha < 8, `trilha a ${paraATrilha.toFixed(1)} m fora do território`);
+
+  // Correndo, a distância até a borda mais longe se faz com folga sobre a máquina.
+  const vantagem = playerConfig.runSpeed - sentinel.speed.chase;
+  const fuga = (sentinel.territory.radius * 2) / playerConfig.runSpeed;
+  assert.ok(vantagem * fuga > sentinel.reach, "a corrida abre distância suficiente antes da borda");
 });

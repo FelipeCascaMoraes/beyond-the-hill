@@ -9,29 +9,34 @@ import type { MachineDefinition } from "./types";
 
 export const machines = {
   /**
-   * A primeira: guarda o trecho do campo entre a trilha e a casa abandonada.
+   * A primeira: guarda o meio do campo, entre a trilha e a casa abandonada.
    * Só aparece depois da primeira lembrança — o Além deixa de ser só bonito.
    *
-   * Duas saídas, as duas que o Victor descreveu: correr de volta para o leste,
-   * até fora do território dela, ou entrar na casa e esperar passar.
+   * O território é deliberadamente curto dos dois lados. A leste ele para
+   * antes da trilha onde Cassandra e Victor esperam; a oeste, antes do
+   * gargalo que leva à casa (a única passagem entre os dois círculos da zona,
+   * por volta de -34,8 / 10,3). Isso é o que torna a travessia justa: a
+   * máquina pode ver a Aysha atravessando, mas desiste assim que ela alcança
+   * qualquer uma das duas pontas — nunca dá para ficar presa do lado de lá.
+   * Um teste guarda essa distância.
    */
   "field-sentinel": {
     zone: "arrival",
     title: "a máquina",
     requires: { flags: ["first-memory"] },
     route: [
-      [-30, -2],
-      [-32, 16],
-      [-18, 20],
-      [-14, 2],
+      [-25, 2],
+      [-25, 13],
+      [-11, 13],
+      [-11, 2],
     ],
     pause: 2.6,
-    // Não alcança nem a trilha onde Cassandra e Victor esperam, nem a colina.
-    territory: { center: [-24, 8], radius: 22 },
+    territory: { center: [-18, 6], radius: 15 },
     vision: { range: 17, halfAngle: 0.7, awareness: 4.5 },
     // Perseguição mais rápida que a caminhada (2.4) e mais lenta que a corrida (3.8).
-    speed: { patrol: 1.5, chase: 3, return: 2.2 },
-    timing: { detect: 1.3, lose: 3.5 },
+    speed: { patrol: 1.5, chase: 2.9, return: 2.2 },
+    // Tempo de sobra para reagir ao ser vista, e desistência rápida.
+    timing: { detect: 1.6, lose: 2.8 },
     reach: 1.6,
     hover: 1.9,
   },
