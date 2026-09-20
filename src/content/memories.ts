@@ -12,7 +12,7 @@ import type { Memory } from "./types";
  * `MemoryId` do próprio objeto seria circular. O `satisfies` cobra que a lista
  * e os dados continuem iguais.
  */
-export const memoryIds = ["childhood-ride", "parents-night"] as const;
+export const memoryIds = ["childhood-ride", "parents-night", "the-names"] as const;
 export type MemoryId = (typeof memoryIds)[number];
 
 export const memories = {
@@ -66,5 +66,30 @@ export const memories = {
       { text: "Depois, só o silêncio. De manhã, a mesa continuava posta.", duration: 3.0 },
     ],
     setsFlags: ["parents-lost"],
+  },
+
+  // Terceira memória: guardada na câmara do labirinto. A menina cresceu e foi
+  // atrás de quem entrou na casa. Fria do começo ao fim — não há nada de doce
+  // aqui. Dois vultos ganham forma: um homem e uma mulher. Nenhum nome ainda.
+  // ~23 s de fragmentos.
+  "the-names": {
+    title: "A lista",
+    description: "Anos depois: portas fechadas, um copo empurrado em troca de um nome, e a certeza de que eram dois.",
+    unlock: { memories: ["parents-night"] },
+    trigger: { type: "interaction" },
+    tone: "cold",
+    autoplay: true,
+    fragments: [
+      { text: "Anos depois. A mesma mão, maior, batendo numa porta que não era dela.", duration: 2.8 },
+      { kind: "voice", text: "Ninguém vai te contar nada, menina. Deixa isso quieto.", duration: 2.6 },
+      { text: "Um papel dobrado muitas vezes. Nomes riscados, um por um.", duration: 2.6 },
+      { kind: "voice", soft: true, text: "Eu não vou deixar quieto.", duration: 2.2 },
+      { text: "Um copo empurrado por cima de uma mesa, em troca de uma frase.", duration: 2.8 },
+      { kind: "voice", text: "Eram dois. Um homem e uma mulher. Viviam desse tipo de serviço.", duration: 3.0 },
+      { text: "Ela escreve. A letra treme, e ela escreve assim mesmo.", duration: 2.4 },
+      { kind: "voice", text: "Por que você quer tanto saber?", duration: 2.0 },
+      { kind: "voice", soft: true, text: "Porque eu estava em cima da escada. Eu vi os pés deles.", duration: 3.0 },
+    ],
+    setsFlags: ["hunt-began"],
   },
 } as const satisfies Record<MemoryId, Memory>;

@@ -13,6 +13,7 @@ export function installDefaultInteractionHandlers(): () => void {
     registerInteractionHandler("memory", (action) => {
       useGameStore.getState().activateMemory(action.memory);
     }),
+    registerInteractionHandler("travel", (action) => useGameStore.getState().travelTo(action.zone)),
   ];
   return () => removers.forEach((remove) => remove());
 }

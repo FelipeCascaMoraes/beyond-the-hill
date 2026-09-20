@@ -1,6 +1,7 @@
 import { memories, pointsOfInterest, type PointOfInterest, type PointOfInterestId, type ZoneId } from "@/content";
 import { memoryStatus } from "@/game/memory/memoryLogic";
 import { poiInteraction } from "@/game/poi/poiInteraction";
+import { meetsRequirement } from "@/game/story/requirements";
 import { useGameStore } from "@/game/state/gameStore";
 import { terrainHeight } from "@/game/world/terrain";
 import type { GrassClearing } from "../world/geometry";
@@ -22,7 +23,8 @@ function PointOfInterestView({ id }: { id: PointOfInterestId }) {
   const y = terrainHeight(x, z);
 
   const status = useGameStore((state) => (poi.memory ? memoryStatus(poi.memory.id, memories[poi.memory.id], state) : null));
-  const { prompt, action } = poiInteraction(poi, status);
+  const travelOpen = useGameStore((state) => (poi.travel ? meetsRequirement(poi.travel.requires, state) : false));
+  const { prompt, action } = poiInteraction(poi, status, travelOpen);
 
   useInteractable(
     {

@@ -129,6 +129,41 @@ test("o cavalinho: examinar → pegar (memória) → pensamento posterior", () =
   });
 });
 
+test("terceira memória: só depois da noite, escondida no labirinto, 15–30 s", () => {
+  const memory: Memory = memories["the-names"];
+  assert.equal(memoryStatus("the-names", memory, context()), "locked");
+  assert.equal(memoryStatus("the-names", memory, context({ recoveredMemories: ["parents-night"] })), "unlocked");
+  assert.equal(nextAutoMemory(memories, context({ recoveredMemories: ["parents-night"] })), null, "não dispara sozinha");
+  assert.deepEqual(memoryTones(memory), ["cold"], "fria do começo ao fim");
+  const seconds = totalDuration(memory);
+  assert.ok(seconds >= 15 && seconds <= 30, `duração ${seconds}s`);
+  // Cassandra e Victor ainda não podem ser nomeados aqui.
+  const texto = memory.fragments.map((fragment) => fragment.text).join(" ");
+  assert.ok(!/Cassandra|Victor/.test(texto), "os nomes ainda não aparecem");
+});
+
+test("a porteira vira passagem depois das duas primeiras lembranças", () => {
+  const gate = pointsOfInterest.gate;
+  // Sem as lembranças, continua sendo só uma porteira.
+  assert.deepEqual(poiInteraction(gate, "recovered", false), {
+    prompt: "Examinar",
+    action: { type: "dialogue", dialogue: "poi-gate-after" },
+  });
+  assert.deepEqual(poiInteraction(gate, "recovered", true), {
+    prompt: "Abrir a porteira",
+    action: { type: "travel", zone: "labyrinth" },
+  });
+  assert.equal(
+    meetsRequirement(gate.travel.requires, context({ recoveredMemories: ["childhood-ride"] })),
+    false,
+    "uma lembrança só não abre",
+  );
+  assert.equal(
+    meetsRequirement(gate.travel.requires, context({ recoveredMemories: ["childhood-ride", "parents-night"] })),
+    true,
+  );
+});
+
 test("a porteira: examinar → tocar (memória) → pensamento posterior", () => {
   const gate = pointsOfInterest.gate;
   assert.deepEqual(poiInteraction(gate, "locked"), { prompt: "Examinar", action: { type: "dialogue", dialogue: "poi-gate" } });

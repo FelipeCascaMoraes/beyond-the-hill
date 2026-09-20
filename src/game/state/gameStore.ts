@@ -62,6 +62,8 @@ interface GameState {
   threat: MachineAlert;
   /** Uma máquina alcançou a Aysha: apagão, sem controle, até ela acordar. */
   captured: boolean;
+  /** Zona para onde a Aysha está atravessando agora (tela esvaindo). */
+  traveling: ZoneId | null;
   /**
    * Sobe a cada vez que a Aysha precisa renascer no começo da zona. O
    * controlador do jogador observa este número para recriar a pose.
@@ -93,6 +95,10 @@ interface GameActions {
   captureByMachine: () => void;
   /** Fim do apagão: a Aysha acorda no começo da zona e pensa no que houve. */
   completeCapture: () => void;
+  /** Começa a travessia para outra zona (a tela se apaga primeiro). */
+  travelTo: (zone: ZoneId) => void;
+  /** Fim da travessia: a Aysha chega na nova zona. */
+  completeTravel: () => void;
   chooseEnding: (choice: EndingChoice) => void;
 }
 
@@ -109,6 +115,7 @@ const initialState: GameState = {
   recoveredMemories: [],
   threat: "calm",
   captured: false,
+  traveling: null,
   spawnEpoch: 0,
   endingChoice: null,
 };
@@ -223,6 +230,18 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
     get().startDialogue("machine-caught");
   },
 
+  travelTo: (zone) => {
+    const state = get();
+    if (state.traveling || state.captured || state.activeMemory) return;
+    set({ traveling: zone, threat: "calm", activeDialogue: null, interactionFocus: null });
+  },
+
+  completeTravel: () =>
+    set((state) => {
+      if (!state.traveling) return {};
+      return { zone: state.traveling, traveling: null, spawnEpoch: state.spawnEpoch + 1 };
+    }),
+
   chooseEnding: (choice) => set({ endingChoice: choice, phase: "ending" }),
 }));
 
@@ -232,10 +251,15 @@ export const selectDialogueBlocksMovement = (state: GameState): boolean =>
 
 /**
  * O jogador pode andar e olhar agora? Falso durante a abertura, no apagão de
- * uma captura, com memória aberta e durante diálogos que travam o movimento.
+ * uma captura, na travessia entre zonas, com memória aberta e durante
+ * diálogos que travam o movimento.
  */
 export const selectCanControl = (state: GameState): boolean =>
-  state.controlEnabled && !state.captured && state.activeMemory === null && !selectDialogueBlocksMovement(state);
+  state.controlEnabled &&
+  !state.captured &&
+  state.traveling === null &&
+  state.activeMemory === null &&
+  !selectDialogueBlocksMovement(state);
 
 /** Estado de uma memória para o progresso atual (bloqueada/desbloqueada/recuperada). */
 export const selectMemoryStatus =

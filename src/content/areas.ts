@@ -10,6 +10,13 @@ export const areaTriggers = {
     radius: 11,
     dialogue: "house-approach",
   },
+  // Ao chegar diante da muralha do labirinto.
+  "labyrinth-arrive": {
+    zone: "labyrinth",
+    center: [2, -55],
+    radius: 9,
+    dialogue: "labyrinth-arrive",
+  },
 } as const satisfies Record<string, AreaTrigger>;
 
 export type AreaTriggerId = keyof typeof areaTriggers;

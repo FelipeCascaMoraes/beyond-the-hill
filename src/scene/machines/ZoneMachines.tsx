@@ -1,4 +1,4 @@
-import { machines, type MachineId, type ZoneId } from "@/content";
+import { machines, type MachineDefinition, type MachineId, type ZoneId } from "@/content";
 import { meetsRequirement } from "@/game/story/requirements";
 import { useGameStore } from "@/game/state/gameStore";
 import { Machine } from "./Machine";
@@ -9,7 +9,8 @@ const inZone = (zone: ZoneId) => machineIds.filter((id) => machines[id].zone ===
 
 /** Uma máquina só existe no mundo quando a história chega até ela. */
 function MachineWhenAllowed({ id }: { id: MachineId }) {
-  const allowed = useGameStore((state) => meetsRequirement(machines[id].requires, state));
+  const machine: MachineDefinition = machines[id];
+  const allowed = useGameStore((state) => meetsRequirement(machine.requires, state));
   return allowed ? <Machine id={id} /> : null;
 }
 

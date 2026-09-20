@@ -127,7 +127,18 @@ export interface NpcDefinition {
 export interface PointOfInterest {
   zone: ZoneId;
   /** Aparência (definida em scene/poi). */
-  kind: "horseshoe" | "fence" | "cairn" | "flowers" | "boulder" | "gate" | "drawing" | "table" | "toy-horse" | "window";
+  kind:
+    | "horseshoe"
+    | "fence"
+    | "cairn"
+    | "flowers"
+    | "boulder"
+    | "gate"
+    | "drawing"
+    | "table"
+    | "toy-horse"
+    | "window"
+    | "note";
   position: readonly [number, number];
   /** Giro no eixo vertical (rad). */
   rotation?: number;
@@ -141,6 +152,12 @@ export interface PointOfInterest {
    * `afterDialogue` (se houver) no lugar do pensamento original.
    */
   memory?: { id: MemoryId; prompt: string; afterDialogue?: DialogueId };
+  /**
+   * Passagem para outra zona. Enquanto a condição não se cumpre, o ponto se
+   * comporta normalmente (é só uma porteira); depois, atravessá-la é a ação
+   * principal — vem antes da memória e do pensamento.
+   */
+  travel?: { zone: ZoneId; prompt: string; requires?: Requirement };
   /** Se bloqueia a passagem, o raio (m). */
   obstacleRadius?: number;
 }

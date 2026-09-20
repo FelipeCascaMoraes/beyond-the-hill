@@ -1,6 +1,7 @@
 import { npcs, pointsOfInterest, zones, type NpcId, type PointOfInterest, type ZoneId } from "@/content";
 import { playerConfig } from "@/game/config/player";
 import { HOUSE, houseWallBoxes } from "@/game/world/house";
+import { LABYRINTH, labyrinthWallBoxes } from "@/game/world/labyrinth";
 import { terrainHeight } from "@/game/world/terrain";
 import { lookAngles, type CircleObstacle, type PlayerEnvironment, type SpawnPose } from "./playerController";
 
@@ -14,6 +15,14 @@ export function getSpawnPose(zoneId: ZoneId): SpawnPose {
   const eyeY = terrainHeight(x, z) + playerConfig.eyeHeight;
   const [lookX, lookY, lookZ] = zone.spawnLookAt;
   return { x, z, eyeY, ...lookAngles(x, eyeY, z, lookX, lookY, lookZ) };
+}
+
+/** Tudo que é parede na zona: a casa abandonada, o labirinto. */
+function zoneWalls(zoneId: ZoneId) {
+  return [
+    ...(HOUSE.zone === zoneId ? houseWallBoxes() : []),
+    ...(LABYRINTH.zone === zoneId ? labyrinthWallBoxes() : []),
+  ];
 }
 
 export function getPlayerEnvironment(zoneId: ZoneId): PlayerEnvironment {
@@ -32,6 +41,6 @@ export function getPlayerEnvironment(zoneId: ZoneId): PlayerEnvironment {
     heightAt: terrainHeight,
     bounds: zones[zoneId].bounds.map(({ center, radius }) => ({ centerX: center[0], centerZ: center[1], radius })),
     obstacles,
-    walls: HOUSE.zone === zoneId ? houseWallBoxes() : [],
+    walls: zoneWalls(zoneId),
   };
 }

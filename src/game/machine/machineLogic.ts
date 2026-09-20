@@ -48,11 +48,22 @@ export interface MachineTarget {
 }
 
 /** Círculo no plano XZ em que a máquina não entra (a casa). */
-export interface KeepOut {
+export interface KeepOutCircle {
   x: number;
   z: number;
   radius: number;
 }
+
+/** Retângulo no plano XZ em que a máquina não entra (as paredes do labirinto). */
+export interface KeepOutBox {
+  minX: number;
+  maxX: number;
+  minZ: number;
+  maxZ: number;
+}
+
+/** Onde a máquina não passa. */
+export type KeepOut = KeepOutCircle | KeepOutBox;
 
 /** O que aconteceu neste passo, para quem chama reagir. */
 export type MachineEvent = "caught" | null;
@@ -143,19 +154,36 @@ function moveToward(actor: MachineActor, x: number, z: number, speed: number, dt
   return distance - step <= ARRIVE_RADIUS;
 }
 
-/** Empurra a máquina para fora dos círculos em que ela não entra (a casa). */
-function keepOutOf(actor: MachineActor, circles: readonly KeepOut[]): void {
-  for (const circle of circles) {
-    const awayX = actor.x - circle.x;
-    const awayZ = actor.z - circle.z;
-    const distance = Math.hypot(awayX, awayZ);
-    if (distance >= circle.radius) continue;
-    if (distance < 1e-6) {
-      actor.x = circle.x + circle.radius;
-      continue;
-    }
-    actor.x = circle.x + (awayX / distance) * circle.radius;
-    actor.z = circle.z + (awayZ / distance) * circle.radius;
+/** Empurra a máquina para fora de um círculo proibido, pelo lado mais próximo. */
+function pushOutOfCircle(actor: MachineActor, circle: KeepOutCircle): void {
+  const awayX = actor.x - circle.x;
+  const awayZ = actor.z - circle.z;
+  const distance = Math.hypot(awayX, awayZ);
+  if (distance >= circle.radius) return;
+  if (distance < 1e-6) {
+    actor.x = circle.x + circle.radius;
+    return;
+  }
+  actor.x = circle.x + (awayX / distance) * circle.radius;
+  actor.z = circle.z + (awayZ / distance) * circle.radius;
+}
+
+/** Empurra a máquina para fora de um retângulo proibido, pela saída mais curta. */
+function pushOutOfBox(actor: MachineActor, box: KeepOutBox): void {
+  if (actor.x <= box.minX || actor.x >= box.maxX || actor.z <= box.minZ || actor.z >= box.maxZ) return;
+  const exits = [actor.x - box.minX, box.maxX - actor.x, actor.z - box.minZ, box.maxZ - actor.z];
+  const shortest = Math.min(...exits);
+  if (shortest === exits[0]) actor.x = box.minX;
+  else if (shortest === exits[1]) actor.x = box.maxX;
+  else if (shortest === exits[2]) actor.z = box.minZ;
+  else actor.z = box.maxZ;
+}
+
+/** Mantém a máquina fora do que ela não atravessa (a casa, as paredes). */
+function keepOutOf(actor: MachineActor, areas: readonly KeepOut[]): void {
+  for (const area of areas) {
+    if ("radius" in area) pushOutOfCircle(actor, area);
+    else pushOutOfBox(actor, area);
   }
 }
 

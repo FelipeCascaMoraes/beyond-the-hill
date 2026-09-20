@@ -127,6 +127,50 @@ export const dialogues = {
     { speaker: "aysha", text: "Era sempre aqui que ele virava o cavalo." },
   ]),
 
+  // ── O labirinto ────────────────────────────────────────────────────────
+  // A orientação é dita em voz alta uma vez: a colina por cima das paredes.
+  // Depois disso, o lugar se explica sozinho.
+
+  "labyrinth-arrive": linear(
+    [
+      { speaker: "narrator", text: "Paredes de pedra, baixas, formando um quadrado grande demais para ser acaso." },
+      { speaker: "aysha", text: "A colina aparece por cima delas. Enquanto eu a vir, eu sei voltar." },
+      { speaker: "narrator", text: "De algum lugar lá dentro vem um zumbido, dando voltas." },
+    ],
+    { blocksMovement: false, setsFlags: ["labyrinth-found"] },
+  ),
+
+  "poi-lab-return": linear([
+    { speaker: "narrator", text: "Pedras empilhadas do lado de fora da muralha, apontando para o campo." },
+    { speaker: "aysha", text: "É por ali que eu volto." },
+  ]),
+
+  "poi-lab-flowers": linear([
+    { speaker: "narrator", text: "Flores amarelas numa fresta da pedra, viradas para cima." },
+    { speaker: "aysha", text: "As mesmas do campo. Alguma coisa aqui ainda insiste." },
+  ]),
+
+  "poi-lab-mark": linear([
+    { speaker: "narrator", text: "Três pedras empilhadas no meio do corredor, com cuidado." },
+    { speaker: "aysha", text: "Alguém chegou até aqui antes de mim. E parou de empilhar." },
+  ]),
+
+  "poi-lab-exit": linear([
+    { speaker: "narrator", text: "A passagem norte está tomada por ferro retorcido. Pela fresta, o campo continua." },
+    { speaker: "aysha", text: "Por aqui não. Ainda não." },
+  ]),
+
+  "poi-lab-note": linear([
+    { speaker: "narrator", text: "No centro, sobre uma pedra baixa, um papel dobrado muitas vezes." },
+    { speaker: "aysha", text: "Esta dobra fui eu que fiz." },
+  ]),
+
+  "poi-lab-note-after": linear([
+    { speaker: "narrator", text: "O papel continua ali, aberto, com os nomes riscados." },
+    { speaker: "aysha", text: "Dois. Sempre foram dois." },
+    { speaker: "narrator", text: "Ela olha para a saída norte por um tempo longo." },
+  ]),
+
   // ── A pergunta ─────────────────────────────────────────────────────────
   "arrival-hill-familiar": linear(
     [

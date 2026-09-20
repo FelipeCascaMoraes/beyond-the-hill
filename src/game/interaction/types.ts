@@ -1,4 +1,4 @@
-import type { DialogueId, MemoryId } from "@/content";
+import type { DialogueId, MemoryId, ZoneId } from "@/content";
 
 // Tipos do sistema de interação. Sem React, sem Three.js.
 
@@ -15,6 +15,7 @@ export interface Point3 {
 export type InteractionAction =
   | { type: "dialogue"; dialogue: DialogueId }
   | { type: "memory"; memory: MemoryId }
+  | { type: "travel"; zone: ZoneId }
   | { type: "examine"; text: string }
   | { type: "event"; event: string }
   | { type: "scene"; scene: string };

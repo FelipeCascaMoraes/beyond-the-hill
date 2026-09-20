@@ -166,6 +166,31 @@ function Boulder() {
   );
 }
 
+/**
+ * O papel da câmara do labirinto: uma pedra baixa, chata, e em cima dela uma
+ * folha dobrada muitas vezes, presa por um seixo para o vento não levar.
+ */
+function Note() {
+  return (
+    <>
+      <mesh position={[0, 0.16, 0]} rotation={[0, 0.3, 0]} scale={[1, 0.35, 1]}>
+        <dodecahedronGeometry args={[0.45, 0]} />
+        <meshLambertMaterial color="#6b675c" flatShading />
+      </mesh>
+      {/* A folha, amarelada e amassada: quase plana sobre a pedra. */}
+      <mesh position={[0, 0.3, 0.02]} rotation={[-Math.PI / 2 + 0.12, 0.25, 0]}>
+        <boxGeometry args={[0.26, 0.34, 0.012]} />
+        <meshLambertMaterial color="#d9cfae" flatShading />
+      </mesh>
+      {/* O seixo que a segura. */}
+      <mesh position={[0.07, 0.34, -0.08]} rotation={[0.3, 0.8, 0.1]}>
+        <dodecahedronGeometry args={[0.055, 0]} />
+        <meshLambertMaterial color="#5f5b52" flatShading />
+      </mesh>
+    </>
+  );
+}
+
 const GATE_WIDTH = 3;
 const WOOD = "#6e5c46";
 
@@ -404,4 +429,6 @@ export const poiVisuals: Record<PoiKind, PoiVisualConfig> = {
   table: { Visual: Table, targetHeight: FLOOR + 0.8, targetRadius: 0.7, reach: 2.6, clearing: 0 },
   "toy-horse": { Visual: ToyHorse, targetHeight: HOUSE_WINDOW.sill + 0.1, targetRadius: 0.25, reach: 2.2, clearing: 0 },
   window: { Visual: WindowView, targetHeight: FLOOR + 1.5, targetRadius: 0.55, reach: 2.8, clearing: 0 },
+  // No labirinto: o chão é de terra batida, sem grama para abrir.
+  note: { Visual: Note, targetHeight: 0.3, targetRadius: 0.4, reach: 2.4, clearing: 0 },
 };

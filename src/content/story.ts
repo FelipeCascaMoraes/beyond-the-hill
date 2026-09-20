@@ -11,6 +11,8 @@ export const storyFlags = [
   "parents-lost",
   "machine-seen",
   "machine-caught",
+  "hunt-began",
+  "labyrinth-found",
 ] as const;
 export type StoryFlag = (typeof storyFlags)[number];
 

@@ -21,7 +21,16 @@ export const zones = {
     ],
   },
   houses: { title: "As Casas Abandonadas", ...placeholder },
-  labyrinth: { title: "O Labirinto", ...placeholder },
+  // Um quadrado de pedra plantado no campo, no caminho da colina. A planta
+  // fica em game/world/labyrinth.ts; aqui só o que a zona precisa saber.
+  labyrinth: {
+    title: "O Labirinto",
+    // Do lado de fora da entrada, no lado sul: a muralha inteira à vista.
+    playerSpawn: [2, 0, -55],
+    // Olhando para a entrada e, por cima das paredes, para a colina.
+    spawnLookAt: [2, 60, -700],
+    bounds: [{ center: [2, -78], radius: 23 }],
+  },
   hillside: { title: "A Colina", ...placeholder },
   refuge: { title: "O Refúgio", ...placeholder },
 } as const satisfies Record<string, Zone>;

@@ -9,6 +9,7 @@ import { InteractionPrompt } from "./InteractionPrompt";
 import { CaptureOverlay } from "./machine/CaptureOverlay";
 import { ThreatVignette } from "./machine/ThreatVignette";
 import { MemoryOverlay } from "./memory/MemoryOverlay";
+import { TravelOverlay } from "./travel/TravelOverlay";
 
 /** Camada HTML sobre o canvas. Não bloqueia o mouse, exceto nos próprios elementos. */
 export function GameUI() {
@@ -26,6 +27,7 @@ export function GameUI() {
           <DialogueBox />
           <MemoryOverlay />
           <CaptureOverlay />
+          <TravelOverlay />
         </>
       )}
       {titleVisible && <TitleScreen onExited={() => setTitleVisible(false)} />}

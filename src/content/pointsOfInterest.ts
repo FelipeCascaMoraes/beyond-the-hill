@@ -44,6 +44,13 @@ export const pointsOfInterest = {
     prompt: "Examinar",
     dialogue: "poi-gate",
     memory: { id: "childhood-ride", prompt: "Tocar a porteira", afterDialogue: "poi-gate-after" },
+    // Depois das duas primeiras lembranças, a porteira deixa de ser lembrança
+    // e vira caminho: é por ela que a Aysha segue para o labirinto.
+    travel: {
+      zone: "labyrinth",
+      prompt: "Abrir a porteira",
+      requires: { memories: ["childhood-ride", "parents-night"] },
+    },
     obstacleRadius: 1.4,
   },
   // ── Dentro da casa abandonada (centro em -44, 12; ver game/world/house.ts) ──
@@ -80,6 +87,51 @@ export const pointsOfInterest = {
     position: [-44.15, 9.5],
     prompt: "Olhar pela janela",
     dialogue: "poi-house-window",
+  },
+  // ── No labirinto (planta em game/world/labyrinth.ts) ──────────────────────
+  // A pilha de pedras fica do lado de fora, na chegada: a marca do caminho de
+  // volta. As outras estão nos corredores e na câmara do meio.
+  labyrinthReturn: {
+    zone: "labyrinth",
+    kind: "cairn",
+    position: [-1.6, -55],
+    prompt: "Examinar",
+    dialogue: "poi-lab-return",
+    travel: { zone: "arrival", prompt: "Voltar para o campo" },
+  },
+  labyrinthFlowers: {
+    zone: "labyrinth",
+    kind: "flowers",
+    // Corredor oeste do segundo anel.
+    position: [-8.4, -80.6],
+    prompt: "Observar",
+    dialogue: "poi-lab-flowers",
+  },
+  labyrinthMark: {
+    zone: "labyrinth",
+    kind: "cairn",
+    // Corredor leste do segundo anel.
+    position: [12.4, -80.6],
+    prompt: "Examinar",
+    dialogue: "poi-lab-mark",
+  },
+  labyrinthNote: {
+    zone: "labyrinth",
+    kind: "note",
+    // O centro exato: a câmara com uma entrada só.
+    position: [2, -78],
+    prompt: "Examinar",
+    dialogue: "poi-lab-note",
+    memory: { id: "the-names", prompt: "Ler o papel", afterDialogue: "poi-lab-note-after" },
+  },
+  labyrinthExit: {
+    zone: "labyrinth",
+    kind: "boulder",
+    // A saída norte, tomada por dentro: dá para ver o campo além, não para passar.
+    position: [2, -96.2],
+    prompt: "Examinar",
+    dialogue: "poi-lab-exit",
+    obstacleRadius: 1.3,
   },
   overlook: {
     zone: "arrival",

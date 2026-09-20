@@ -1,4 +1,5 @@
 import { HOUSE } from "./house";
+import { LABYRINTH, LABYRINTH_HALF } from "./labyrinth";
 import { fbm, smoothstep } from "./noise";
 
 // Forma do mundo. Fonte única da altura do chão: terreno, grama, árvore e o
@@ -40,23 +41,50 @@ function hillHeight(x: number, z: number): number {
   return main + shoulder;
 }
 
-/** Chão nivelado sob a casa, com transição suave para o terreno em volta. */
-const HOUSE_PAD = { x: HOUSE.x, z: HOUSE.z, radius: 4.5, feather: 7 } as const;
+/**
+ * Chão nivelado sob o que foi construído, com transição suave para o terreno
+ * em volta: nem a casa nem o labirinto ficam tortos sobre a ondulação.
+ */
+interface GroundPad {
+  x: number;
+  z: number;
+  radius: number;
+  /** Largura da transição até o terreno natural (m). */
+  feather: number;
+}
+
+const HOUSE_PAD: GroundPad = { x: HOUSE.x, z: HOUSE.z, radius: 4.5, feather: 7 };
+const LABYRINTH_PAD: GroundPad = { x: LABYRINTH.x, z: LABYRINTH.z, radius: LABYRINTH_HALF + 2, feather: 16 };
+const PADS: readonly GroundPad[] = [HOUSE_PAD, LABYRINTH_PAD];
 
 export function terrainHeight(x: number, z: number): number {
-  const natural = naturalHeight(x, z);
-  const fromPad = Math.hypot(x - HOUSE_PAD.x, z - HOUSE_PAD.z);
-  if (fromPad >= HOUSE_PAD.radius + HOUSE_PAD.feather) return natural;
-  const flatten = 1 - smoothstep(HOUSE_PAD.radius, HOUSE_PAD.radius + HOUSE_PAD.feather, fromPad);
-  return natural + (housePadHeight() - natural) * flatten;
+  let height = naturalHeight(x, z);
+  for (const pad of PADS) {
+    const distance = Math.hypot(x - pad.x, z - pad.z);
+    if (distance >= pad.radius + pad.feather) continue;
+    const flatten = 1 - smoothstep(pad.radius, pad.radius + pad.feather, distance);
+    height += (padHeight(pad) - height) * flatten;
+  }
+  return height;
 }
 
-let padHeight: number | null = null;
-/** Altura do piso da casa (calculada uma vez). */
-export function housePadHeight(): number {
-  padHeight ??= naturalHeight(HOUSE_PAD.x, HOUSE_PAD.z);
-  return padHeight;
+const padHeights = new Map<GroundPad, number>();
+
+/** Altura do piso de uma construção (calculada uma vez por lugar). */
+function padHeight(pad: GroundPad): number {
+  let height = padHeights.get(pad);
+  if (height === undefined) {
+    height = naturalHeight(pad.x, pad.z);
+    padHeights.set(pad, height);
+  }
+  return height;
 }
+
+/** Altura do piso da casa. */
+export const housePadHeight = (): number => padHeight(HOUSE_PAD);
+
+/** Altura do chão do labirinto. */
+export const labyrinthPadHeight = (): number => padHeight(LABYRINTH_PAD);
 
 function naturalHeight(x: number, z: number): number {
   const hill = hillHeight(x, z);
