@@ -201,10 +201,14 @@ test("depois da quinta lembrança vem o entendimento — e não o final", () => 
   assert.equal(beat, "guides-lied", "o jogo conta a mentira, sem confronto");
   assert.equal(storyBeats["guides-lied"].requires.memories?.[0], "after");
 
-  // E depois disso o jogo para: nada empurra a Aysha para um desfecho ainda.
+  // Entendida a mentira, o campo se esvazia — e é só isso que ainda acontece ali.
   const afterwards = context({ ...lived, seenDialogues: [...lived.seenDialogues, "guides-lied"], flags: [...lived.flags, "they-lied"] });
-  assert.equal(nextBeat(storyBeats, "arrival", afterwards), null);
-  assert.equal(nextAutoMemory(memories, afterwards), null);
+  assert.equal(nextBeat(storyBeats, "arrival", afterwards), "field-empty");
+
+  // E depois disso o campo para: o que resta é ir até a colina, a pé.
+  const emptied = context({ ...lived, seenDialogues: [...lived.seenDialogues, "guides-lied", "field-empty"], flags: [...lived.flags, "they-lied"] });
+  assert.equal(nextBeat(storyBeats, "arrival", emptied), null);
+  assert.equal(nextAutoMemory(memories, emptied), null);
 });
 
 test("a porteira vira passagem depois das duas primeiras lembranças", () => {

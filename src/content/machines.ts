@@ -24,6 +24,10 @@ export const machines = {
     zone: "arrival",
     title: "a máquina",
     requires: { flags: ["first-memory"] },
+    // E some quando a Aysha entende quem são os dois: a máquina rondava o
+    // campo para segurá-la deste lado enquanto a memória não voltava. Voltou.
+    // O campo fica sem ninguém e sem nada — o silêncio é o que assusta agora.
+    leavesWhen: { flags: ["they-lied"] },
     route: [
       [-25, 2],
       [-25, 13],

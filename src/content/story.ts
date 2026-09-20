@@ -17,6 +17,9 @@ export const storyFlags = [
   "guides-known",
   "own-death",
   "they-lied",
+  "hill-reached",
+  "hill-climbed",
+  "refuge-seen",
 ] as const;
 export type StoryFlag = (typeof storyFlags)[number];
 
@@ -59,6 +62,17 @@ export const storyBeats = {
     dialogue: "guides-lied",
     requires: { memories: ["after"] },
     delay: 3,
+  },
+  // E então o campo se esvazia. Este momento só narra o que já é verdade: quem
+  // tira os dois e a máquina do mundo é o próprio marco "they-lied" (ver
+  // `leavesWhen` em npcs.ts e machines.ts). Assim nada depende de o jogador
+  // estar por perto para ouvir — se ele já tiver ido embora para o labirinto,
+  // o campo estará vazio quando voltar, com ou sem estas falas.
+  "field-empty": {
+    zone: "arrival",
+    dialogue: "field-empty",
+    requires: { flags: ["they-lied"] },
+    delay: 4,
   },
   // Depois da primeira lembrança o Além mostra os dentes: algo ronda o campo.
   "machine-arrives": {

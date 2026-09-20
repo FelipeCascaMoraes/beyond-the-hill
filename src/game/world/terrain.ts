@@ -1,6 +1,6 @@
-import { HOUSE } from "./house";
-import { LABYRINTH, LABYRINTH_HALF } from "./labyrinth";
-import { fbm, smoothstep } from "./noise";
+import { HOUSE } from "./house.ts";
+import { LABYRINTH, LABYRINTH_HALF } from "./labyrinth.ts";
+import { fbm, smoothstep } from "./noise.ts";
 
 // Forma do mundo. Fonte única da altura do chão: terreno, grama, árvore e o
 // movimento da Aysha usam a mesma função, sem física.
@@ -20,11 +20,69 @@ export const HILL = {
   radiusZ: 280,
 } as const;
 
+/**
+ * A concha atrás do cume: um anel de terra levantado em volta de um fundo
+ * abrigado. Fica logo depois do ponto mais alto, então a própria colina a
+ * esconde de todo o campo; do cume aparece só um pedaço, e o resto só quando
+ * a Aysha chega na borda. É para lá que a subida leva.
+ */
+export const HOLLOW = {
+  x: 44,
+  z: -792,
+  /** Raio do fundo, onde o anel se levanta. */
+  radius: 32,
+  /** Quanto o fundo afunda em relação ao terreno em volta. */
+  depth: 9,
+  /** Altura e largura do anel de borda. */
+  rimHeight: 3,
+  rimWidth: 11,
+  /** A brecha no anel, do lado do cume: é por ela que se entra. */
+  gate: { width: 16, depth: 0.9 },
+} as const;
+
 /** Ombro na encosta esquerda: um degrau que torna a silhueta reconhecível. */
 const SHOULDER = { x: -380, z: -690, height: 58, radiusX: 150, radiusZ: 200 } as const;
 
 /** Onde fica o topo (e a árvore solitária). */
 export const SUMMIT = { x: HILL.x, z: HILL.z } as const;
+
+export interface ClimbPoint {
+  x: number;
+  z: number;
+  /** Altura que o terreno deve ter aqui. Sem ela, o trecho é terreno natural. */
+  y?: number;
+}
+
+/**
+ * O caminho que sobe a encosta sul e desce para a concha atrás do cume. Subir
+ * em linha reta pela cara da colina dá quase 40° — um paredão. Aqui a trilha
+ * contorna para oeste e volta, e o terreno perto dela é puxado para o perfil
+ * escrito abaixo (ver `climbRamp`). De longe a silhueta é a mesma; de perto
+ * existe por onde subir, e dá para ver lá de cima o trecho já andado.
+ *
+ * É também a linha de onde saem a área explorável da encosta e a trilha aberta
+ * na grama (ver game/world/hillside.ts): mexer aqui move as três coisas.
+ */
+export const CLIMB_PATH: readonly ClimbPoint[] = [
+  // O vale, antes da subida: o terreno já é manso, a rampa não entra.
+  { x: 15, z: -330 },
+  { x: 23, z: -410 },
+  // Daqui em diante a altura é escrita à mão: 27° de subida constante até o
+  // cume, e 13° a 18° de descida até o fundo da concha.
+  { x: 26, z: -468, y: 11 },
+  { x: 8, z: -505, y: 32 },
+  { x: -12, z: -560, y: 63 },
+  { x: -6, z: -620, y: 94 },
+  { x: 14, z: -668, y: 121 },
+  { x: 32, z: -700, y: 140 },
+  { x: 40, z: -718, y: 150 },
+  { x: 44, z: -752, y: 142 },
+  { x: 45, z: -800, y: 126 },
+];
+
+/** Até esta distância da linha, a rampa manda sozinha; depois volta a colina (m). */
+const CLIMB_FULL = 13;
+const CLIMB_FADE = 36;
 
 /** Raio ao redor do despertar em que o campo é quase plano. */
 const CALM_RADIUS = 10;
@@ -39,6 +97,17 @@ function hillHeight(x: number, z: number): number {
   const shoulder = SHOULDER.height * Math.exp(-(sx * sx + sz * sz) * 2);
 
   return main + shoulder;
+}
+
+/** O anel e o fundo da concha, somados ao relevo da colina. */
+function hollowHeight(x: number, z: number): number {
+  const distance = Math.hypot(x - HOLLOW.x, z - HOLLOW.z);
+  // O anel abre uma brecha do lado do cume, ou a Aysha teria de escalar a borda.
+  const toGate = Math.hypot(x - HOLLOW.x, z - (HOLLOW.z + HOLLOW.radius));
+  const gate = 1 - HOLLOW.gate.depth * Math.exp(-((toGate / HOLLOW.gate.width) ** 2));
+  const rim = HOLLOW.rimHeight * gate * Math.exp(-(((distance - HOLLOW.radius) / HOLLOW.rimWidth) ** 2));
+  const bowl = -HOLLOW.depth * (1 - smoothstep(0, HOLLOW.radius, distance));
+  return rim + bowl;
 }
 
 /**
@@ -58,7 +127,7 @@ const LABYRINTH_PAD: GroundPad = { x: LABYRINTH.x, z: LABYRINTH.z, radius: LABYR
 const PADS: readonly GroundPad[] = [HOUSE_PAD, LABYRINTH_PAD];
 
 export function terrainHeight(x: number, z: number): number {
-  let height = naturalHeight(x, z);
+  let height = climbRamp(x, z, naturalHeight(x, z));
   for (const pad of PADS) {
     const distance = Math.hypot(x - pad.x, z - pad.z);
     if (distance >= pad.radius + pad.feather) continue;
@@ -66,6 +135,33 @@ export function terrainHeight(x: number, z: number): number {
     height += (padHeight(pad) - height) * flatten;
   }
   return height;
+}
+
+/** Os trechos com altura escrita: só eles cavam a rampa. */
+const rampSegments = CLIMB_PATH.flatMap((from, index) => {
+  const to = CLIMB_PATH[index + 1];
+  return from.y !== undefined && to?.y !== undefined ? [{ from, to }] : [];
+}) as readonly { from: Required<ClimbPoint>; to: Required<ClimbPoint> }[];
+
+/**
+ * Puxa o terreno perto da trilha para o perfil escrito em `CLIMB_PATH`. Longe
+ * dela o valor não muda, então a colina continua sendo a colina — a rampa é um
+ * corte na encosta, não uma reforma.
+ */
+function climbRamp(x: number, z: number, natural: number): number {
+  let best = CLIMB_FADE;
+  let target = 0;
+  for (const { from, to } of rampSegments) {
+    const dx = to.x - from.x;
+    const dz = to.z - from.z;
+    const t = Math.min(1, Math.max(0, ((x - from.x) * dx + (z - from.z) * dz) / (dx * dx + dz * dz)));
+    const distance = Math.hypot(x - (from.x + dx * t), z - (from.z + dz * t));
+    if (distance >= best) continue;
+    best = distance;
+    target = from.y + (to.y - from.y) * t;
+  }
+  if (best >= CLIMB_FADE) return natural;
+  return natural + (target - natural) * (1 - smoothstep(CLIMB_FULL, CLIMB_FADE, best));
 }
 
 const padHeights = new Map<GroundPad, number>();
@@ -101,7 +197,7 @@ function naturalHeight(x: number, z: number): number {
   // Vale entre a crista e a colina: o que existe ali fica escondido.
   const valley = -10 * Math.exp(-(((z + 500) / 110) ** 2));
 
-  return rolling * calm * (1 - 0.7 * onHill) + ridge + valley + hill;
+  return rolling * calm * (1 - 0.7 * onHill) + ridge + valley + hill + hollowHeight(x, z);
 }
 
 /** Trilha de grama pisada que serpenteia do despertar na direção da colina. */

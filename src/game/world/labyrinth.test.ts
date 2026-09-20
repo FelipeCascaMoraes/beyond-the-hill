@@ -4,6 +4,9 @@ import { pointsOfInterest } from "../../content/pointsOfInterest.ts";
 import type { PointOfInterest } from "../../content/types.ts";
 import { zones } from "../../content/zones.ts";
 import { playerConfig } from "../config/player.ts";
+import { getPlayerEnvironment } from "../player/spawn.ts";
+import { poiInteraction } from "../poi/poiInteraction.ts";
+import { meetsRequirement } from "../story/requirements.ts";
 import {
   LABYRINTH,
   LABYRINTH_HALF,
@@ -125,11 +128,36 @@ test("a lembrança do labirinto está na câmara escondida", () => {
   assert.equal(isInsideLabyrinth(note.position[0], note.position[1]), true, "e a máquina não chega lá");
 });
 
-test("a saída norte está bloqueada: o labirinto não leva a lugar nenhum ainda", () => {
+test("a saída norte fica fechada enquanto a Aysha acreditar nos dois", () => {
   const exitPoi = pointsOfInterest.labyrinthExit as PointOfInterest;
   const cell = cellAt(exitPoi.position[0], exitPoi.position[1]);
   assert.deepEqual({ row: cell.row, col: cell.col }, exit);
   assert.ok((exitPoi.obstacleRadius ?? 0) + playerConfig.bodyRadius > LABYRINTH.cell / 2, "tapa o vão inteiro");
+
+  const before = { flags: [], seenDialogues: [], recoveredMemories: [] } as const;
+  assert.deepEqual(poiInteraction(exitPoi, null, meetsRequirement(exitPoi.travel?.requires, before)), {
+    prompt: "Examinar",
+    action: { type: "dialogue", dialogue: "poi-lab-exit" },
+  });
+});
+
+test("e vira o caminho da colina quando ela para de acreditar", () => {
+  const exitPoi = pointsOfInterest.labyrinthExit as PointOfInterest;
+  const after = { flags: ["they-lied"], seenDialogues: [], recoveredMemories: [] } as const;
+  const open = meetsRequirement(exitPoi.travel?.requires, after);
+  assert.equal(open, true);
+  assert.deepEqual(poiInteraction(exitPoi, null, open), {
+    prompt: "Seguir para a colina",
+    action: { type: "travel", zone: "hillside" },
+  });
+
+  // E o ferro some de verdade: nem desenhado, nem barrando o vão.
+  assert.equal(exitPoi.travel?.clears, true);
+  const solids = getPlayerEnvironment("labyrinth", after).obstacles ?? [];
+  const stillThere = solids.some(
+    (obstacle) => obstacle.x === exitPoi.position[0] && obstacle.z === exitPoi.position[1],
+  );
+  assert.equal(stillThere, false, "a Aysha passaria a esbarrar no que já não existe");
 });
 
 test("o labirinto cabe dentro da área explorável da zona", () => {

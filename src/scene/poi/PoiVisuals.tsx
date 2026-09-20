@@ -405,6 +405,11 @@ function WindowView() {
   return <></>;
 }
 
+/** A árvore do cume é parte do mundo (world/LoneTree); aqui, só a interação. */
+function TreeTrunk() {
+  return <></>;
+}
+
 interface PoiVisualConfig {
   Visual: (props: VisualProps) => React.JSX.Element;
   /** Altura do alvo de interação acima da base (m). */
@@ -431,4 +436,6 @@ export const poiVisuals: Record<PoiKind, PoiVisualConfig> = {
   window: { Visual: WindowView, targetHeight: FLOOR + 1.5, targetRadius: 0.55, reach: 2.8, clearing: 0 },
   // No labirinto: o chão é de terra batida, sem grama para abrir.
   note: { Visual: Note, targetHeight: 0.3, targetRadius: 0.4, reach: 2.4, clearing: 0 },
+  // O tronco é largo: alvo alto e alcance generoso, para encostar nele.
+  tree: { Visual: TreeTrunk, targetHeight: 1.5, targetRadius: 1.1, reach: 4.2, clearing: 3.2 },
 };

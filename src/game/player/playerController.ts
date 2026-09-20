@@ -167,7 +167,7 @@ export function updatePlayer(
   }
   const sin = Math.sin(state.yaw);
   const cos = Math.cos(state.yaw);
-  const moveSpeed = input.run ? config.runSpeed : config.walkSpeed;
+  const moveSpeed = (input.run ? config.runSpeed : config.walkSpeed) * climbFactor(state, environment, config, sin, cos, forward, strafe);
   const wishX = (-sin * forward + cos * strafe) * moveSpeed;
   const wishZ = (-cos * forward - sin * strafe) * moveSpeed;
 
@@ -226,6 +226,40 @@ export function updatePlayer(
 
   const speed = Math.hypot(state.velocityX, state.velocityZ);
   state.stepPhase += speed * dt * config.headBob.stepsPerMeter;
+}
+
+/** Distância à frente usada para medir a inclinação do chão (m). */
+const SLOPE_PROBE = 1.2;
+
+/**
+ * O quanto a subida encurta o passo, de `minFactor` (ladeira) a 1 (plano).
+ * Mede o chão um passo à frente na direção em que se quer ir: subir custa,
+ * descer e andar de través não. É o que faz a colina ser uma colina e não uma
+ * rampa de esteira — e o que torna a trilha cavada na encosta o caminho
+ * naturalmente mais rápido, sem nenhum marcador dizendo isso.
+ */
+function climbFactor(
+  state: PlayerState,
+  environment: PlayerEnvironment,
+  config: PlayerConfig,
+  sin: number,
+  cos: number,
+  forward: number,
+  strafe: number,
+): number {
+  const dirX = -sin * forward + cos * strafe;
+  const dirZ = -cos * forward - sin * strafe;
+  const length = Math.hypot(dirX, dirZ);
+  if (length < 1e-4) return 1;
+
+  const aheadX = state.x + (dirX / length) * SLOPE_PROBE;
+  const aheadZ = state.z + (dirZ / length) * SLOPE_PROBE;
+  const rise = environment.heightAt(aheadX, aheadZ) - environment.heightAt(state.x, state.z);
+  if (rise <= 0) return 1;
+
+  const slope = Math.atan2(rise, SLOPE_PROBE);
+  const { easySlope, hardSlope, minFactor } = config.climb;
+  return 1 - (1 - minFactor) * smoothstep(easySlope, hardSlope, slope);
 }
 
 /** Deslocamento vertical do passo; some quando a Aysha está parada. */

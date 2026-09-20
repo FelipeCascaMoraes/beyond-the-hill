@@ -124,13 +124,21 @@ export const pointsOfInterest = {
     dialogue: "poi-lab-note",
     memory: { id: "the-names", prompt: "Ler o papel", afterDialogue: "poi-lab-note-after" },
   },
+  // A saída norte. Tomada por ferro retorcido enquanto a Aysha acredita nos
+  // dois; no instante em que ela para de acreditar, o ferro não está mais lá —
+  // e é por aqui que se vai para a colina.
   labyrinthExit: {
     zone: "labyrinth",
     kind: "boulder",
-    // A saída norte, tomada por dentro: dá para ver o campo além, não para passar.
     position: [2, -96.2],
     prompt: "Examinar",
     dialogue: "poi-lab-exit",
+    travel: {
+      zone: "hillside",
+      prompt: "Seguir para a colina",
+      requires: { flags: ["they-lied"] },
+      clears: true,
+    },
     obstacleRadius: 1.3,
   },
   // A pedra virada para a colina, como um banco. Depois de reconhecer os dois,
@@ -142,6 +150,68 @@ export const pointsOfInterest = {
     prompt: "Olhar a colina",
     dialogue: "poi-overlook",
     memory: { id: "after", prompt: "Sentar na pedra", afterDialogue: "poi-overlook-after" },
+    obstacleRadius: 1.3,
+  },
+  // ── Na encosta (caminho em game/world/terrain.ts) ─────────────────────────
+  // Sete paradas ao longo de meio quilômetro de subida. Nenhuma delas guarda
+  // resposta nenhuma: a esta altura a Aysha já sabe tudo que precisava saber.
+  // Elas existem para dar ritmo à caminhada e para ela poder olhar para trás.
+  hillsideFlowers: {
+    zone: "hillside",
+    kind: "flowers",
+    // No fundo do vale, onde a água junta.
+    position: [19.5, -404],
+    prompt: "Observar",
+    dialogue: "poi-hill-flowers",
+  },
+  hillsideFence: {
+    zone: "hillside",
+    kind: "fence",
+    // Os últimos postes, no pé da subida: a cerca do campo acabava aqui.
+    position: [29, -462],
+    prompt: "Examinar",
+    dialogue: "poi-hill-fence",
+  },
+  hillsideCairn: {
+    zone: "hillside",
+    kind: "cairn",
+    position: [4, -522],
+    prompt: "Examinar",
+    dialogue: "poi-hill-cairn",
+  },
+  // A curva do caminho, no ponto mais a oeste: daqui se vê a subida inteira
+  // já andada, e o campo lá embaixo virou um detalhe.
+  hillsideLookout: {
+    zone: "hillside",
+    kind: "boulder",
+    position: [-14, -566],
+    prompt: "Olhar para trás",
+    dialogue: "poi-hill-lookout",
+    obstacleRadius: 1.3,
+  },
+  hillsideHorseshoe: {
+    zone: "hillside",
+    kind: "horseshoe",
+    position: [17, -664],
+    prompt: "Examinar",
+    dialogue: "poi-hill-horseshoe",
+  },
+  // A árvore do cume: o desenho da parede, de perto. O tronco é parte do
+  // mundo (scene/world/LoneTree); aqui existe só o ponto de interação.
+  summitTree: {
+    zone: "hillside",
+    kind: "tree",
+    position: [38.6, -715.5],
+    prompt: "Tocar a árvore",
+    dialogue: "poi-summit-tree",
+  },
+  // No fundo da concha, do outro lado do cume.
+  hollowStone: {
+    zone: "hillside",
+    kind: "boulder",
+    position: [45, -789],
+    prompt: "Examinar",
+    dialogue: "poi-hollow-stone",
     obstacleRadius: 1.3,
   },
 } as const satisfies Record<string, PointOfInterest>;

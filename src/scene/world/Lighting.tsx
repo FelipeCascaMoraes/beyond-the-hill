@@ -1,56 +1,50 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import { Color, type DirectionalLight, type HemisphereLight } from "three";
-import { atmosphere, memoryMood, type MemoryMoodId } from "@/game/config/render";
-import { selectActiveMemoryTone, useGameStore } from "@/game/state/gameStore";
+import { atmosphere, lightMoods, MOOD_SPEED } from "@/game/config/render";
+import { lightBlend, resolveLight } from "./mood";
 
 const [sx, sy, sz] = atmosphere.sunDirection;
 
-/** Cores de cada clima, criadas uma vez (o loop só interpola). */
-const moodColors = Object.fromEntries(
-  Object.entries(memoryMood).map(([id, mood]) => [
-    id,
-    { sun: new Color(mood.sunColor), sky: new Color(mood.skyColor), ground: new Color(mood.groundColor) },
-  ]),
-) as Record<MemoryMoodId, { sun: Color; sky: Color; ground: Color }>;
-
-/** Velocidade da mudança de luz (1/s): rápida o bastante para a virada, sem piscar. */
-const MOOD_SPEED = 1.8;
-
 /**
  * Contraluz: o sol está atrás da colina; o céu preenche as sombras. Sem shadow maps.
- * Durante uma lembrança a luz segue o clima dela (`memoryMood`), esquentando ou
- * perdendo a cor, e volta ao normal quando a lembrança termina.
+ *
+ * A luz segue o clima do momento (ver ./mood): a lembrança em andamento, ou —
+ * fora delas — a história e a altura da subida. Ela nunca salta: persegue o
+ * alvo a uma velocidade fixa, então uma virada de lembrança leva um segundo e
+ * a subida da colina leva a subida inteira.
  */
 export function Lighting() {
   const sunRef = useRef<DirectionalLight>(null);
   const skyRef = useRef<HemisphereLight>(null);
+  const target = useMemo(
+    () => ({ sun: lightMoods.idle.sun, sky: lightMoods.idle.sky, sunColor: new Color(), skyColor: new Color(), groundColor: new Color() }),
+    [],
+  );
 
-  useFrame((_, delta) => {
+  useFrame(({ camera }, delta) => {
     const sun = sunRef.current;
     const sky = skyRef.current;
     if (!sun || !sky) return;
 
-    const id: MemoryMoodId = selectActiveMemoryTone(useGameStore.getState()) ?? "idle";
-    const mood = memoryMood[id];
-    const colors = moodColors[id];
+    resolveLight(lightBlend(camera.position.y), target);
     const step = 1 - Math.exp(-delta * MOOD_SPEED);
 
-    sun.intensity += (mood.sun - sun.intensity) * step;
-    sun.color.lerp(colors.sun, step);
-    sky.intensity += (mood.sky - sky.intensity) * step;
-    sky.color.lerp(colors.sky, step);
-    sky.groundColor.lerp(colors.ground, step);
+    sun.intensity += (target.sun - sun.intensity) * step;
+    sun.color.lerp(target.sunColor, step);
+    sky.intensity += (target.sky - sky.intensity) * step;
+    sky.color.lerp(target.skyColor, step);
+    sky.groundColor.lerp(target.groundColor, step);
   });
 
   return (
     <>
-      <hemisphereLight ref={skyRef} args={[memoryMood.idle.skyColor, memoryMood.idle.groundColor, memoryMood.idle.sky]} />
+      <hemisphereLight ref={skyRef} args={[lightMoods.idle.skyColor, lightMoods.idle.groundColor, lightMoods.idle.sky]} />
       <directionalLight
         ref={sunRef}
         position={[sx * 200, sy * 200, sz * 200]}
-        intensity={memoryMood.idle.sun}
-        color={memoryMood.idle.sunColor}
+        intensity={lightMoods.idle.sun}
+        color={lightMoods.idle.sunColor}
       />
     </>
   );

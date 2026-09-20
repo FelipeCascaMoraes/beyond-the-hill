@@ -27,10 +27,15 @@ function warpGrid(u: number): number {
 }
 
 /**
- * Terreno + colina em um único mesh. A grade é mais densa perto do jogador e
+ * Terreno + colina em um único mesh. A grade é mais densa perto de `focus` e
  * mais esparsa ao longe: cobre 2,5 km com o mesmo número de vértices.
+ *
+ * O foco é a zona atual, não a origem do mundo: na encosta o jogador está a
+ * 500 m do despertar, e com a grade centrada lá os vértices ficariam a 8 m um
+ * do outro justamente onde se caminha — chão facetado e passo afundando. Cada
+ * zona diz em `terrainFocus` onde quer o detalhe.
  */
-export function createTerrainGeometry(): BufferGeometry {
+export function createTerrainGeometry(focus: readonly [number, number] = [0, 0]): BufferGeometry {
   const geometry = new PlaneGeometry(2, 2, TERRAIN_SEGMENTS, TERRAIN_SEGMENTS);
   geometry.rotateX(-Math.PI / 2);
 
@@ -42,8 +47,8 @@ export function createTerrainGeometry(): BufferGeometry {
   const color = new Color();
 
   for (let i = 0; i < position.count; i++) {
-    const x = warpGrid(position.getX(i));
-    const z = warpGrid(position.getZ(i));
+    const x = focus[0] + warpGrid(position.getX(i));
+    const z = focus[1] + warpGrid(position.getZ(i));
     const y = terrainHeight(x, z);
     position.setXYZ(i, x, y, z);
 

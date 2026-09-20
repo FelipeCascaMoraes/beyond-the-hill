@@ -22,6 +22,12 @@ export interface PlayerConfig {
   boundsSoftMargin: number;
   /** Raio do corpo da Aysha para colisão com obstáculos (m). */
   bodyRadius: number;
+  /**
+   * O passo encurta na subida. Até `easySlope` não muda nada; em `hardSlope`
+   * sobra `minFactor` da velocidade. Descer não acelera: a Aysha não corre
+   * morro abaixo.
+   */
+  climb: { easySlope: number; hardSlope: number; minFactor: number };
   headBob: {
     /** Amplitude vertical do passo (m). */
     amplitude: number;
@@ -42,6 +48,8 @@ export const playerConfig: PlayerConfig = {
   groundSmoothing: 10,
   boundsSoftMargin: 5,
   bodyRadius: 0.3,
+  // Até 8° é campo; 30° é a encosta da colina, onde ela sobe a 60% do passo.
+  climb: { easySlope: 0.14, hardSlope: 0.52, minFactor: 0.6 },
   headBob: {
     amplitude: 0.02,
     stepsPerMeter: 0.85,

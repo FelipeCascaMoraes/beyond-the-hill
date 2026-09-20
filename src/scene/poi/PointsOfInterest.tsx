@@ -25,6 +25,9 @@ function PointOfInterestView({ id }: { id: PointOfInterestId }) {
   const status = useGameStore((state) => (poi.memory ? memoryStatus(poi.memory.id, memories[poi.memory.id], state) : null));
   const travelOpen = useGameStore((state) => (poi.travel ? meetsRequirement(poi.travel.requires, state) : false));
   const { prompt, action } = poiInteraction(poi, status, travelOpen);
+  // O que fechava a passagem some ao abrir: sobra o vão e o ponto de travessia
+  // nele. A colisão some na mesma condição (ver game/player/spawn.ts).
+  const cleared = travelOpen && poi.travel?.clears === true;
 
   useInteractable(
     {
@@ -40,7 +43,7 @@ function PointOfInterestView({ id }: { id: PointOfInterestId }) {
   const { Visual } = visual;
   return (
     <group position={[x, y, z]} rotation-y={poi.rotation ?? 0}>
-      <Visual x={x} y={y} z={z} />
+      {cleared ? null : <Visual x={x} y={y} z={z} />}
     </group>
   );
 }

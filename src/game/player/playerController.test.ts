@@ -17,6 +17,8 @@ const config: PlayerConfig = {
   groundSmoothing: 1000,
   boundsSoftMargin: 2,
   bodyRadius: 0.3,
+  // Sem penalidade de subida por padrão: quem for testar a encosta troca isto.
+  climb: { easySlope: 0.14, hardSlope: 0.52, minFactor: 1 },
   headBob: { amplitude: 0.02, stepsPerMeter: 1 },
 };
 
@@ -36,6 +38,45 @@ test("correr é mais rápido que caminhar, e para na velocidade de corrida", () 
   const ran = Math.hypot(running.x, running.z);
   assert.ok(ran > walked, `correndo ${ran.toFixed(2)} m, andando ${walked.toFixed(2)} m`);
   assert.ok(Math.hypot(running.velocityX, running.velocityZ) <= config.runSpeed + 1e-6);
+});
+
+// ── Subir custa ───────────────────────────────────────────────────────────
+// A encosta da colina tem uns 27° o caminho inteiro. Sem penalidade nenhuma a
+// Aysha a venceria no mesmo passo do campo plano, e a subida viraria uma
+// esteira; com ela, a trilha cavada é naturalmente o caminho mais rápido.
+
+/** Configuração com a penalidade de subida ligada, como a do jogo. */
+const climbing: PlayerConfig = { ...config, climb: { easySlope: 0.14, hardSlope: 0.52, minFactor: 0.6 } };
+
+/** Uma rampa de inclinação constante subindo na direção -Z. */
+const ramp = (degrees: number): PlayerEnvironment => ({
+  heightAt: (_x, z) => -z * Math.tan((degrees * Math.PI) / 180),
+  bounds: [{ centerX: 0, centerZ: -500, radius: 600 }],
+});
+
+function distance(seconds: number, input: PlayerInput, environment: PlayerEnvironment, withConfig: PlayerConfig) {
+  const player = createPlayerState({ x: 0, z: 0, eyeY: withConfig.eyeHeight, yaw: 0, pitch: 0 });
+  for (let i = 0; i < seconds / DT; i++) updatePlayer(player, input, DT, environment, withConfig);
+  return Math.hypot(player.x, player.z);
+}
+
+test("subir encurta o passo, sem nunca travar a Aysha", () => {
+  const onFlat = distance(3, forward, flat, climbing);
+  const uphill = distance(3, forward, ramp(27), climbing);
+  assert.ok(uphill < onFlat * 0.8, `subindo ${uphill.toFixed(2)} m contra ${onFlat.toFixed(2)} m no plano`);
+  assert.ok(uphill > onFlat * climbing.climb.minFactor * 0.9, "mas ela continua subindo, e não a passo de tartaruga");
+});
+
+test("ladeira de menos de 8° não muda nada, e descer não acelera", () => {
+  const onFlat = distance(3, forward, flat, climbing);
+  assert.ok(Math.abs(distance(3, forward, ramp(6), climbing) - onFlat) < 0.02, "o campo ondulado anda igual");
+  assert.ok(distance(3, forward, ramp(-27), climbing) <= onFlat + 1e-6, "a Aysha não dispara morro abaixo");
+});
+
+test("andar de través na encosta não é penalizado", () => {
+  // Olhando para -Z numa rampa que sobe para -Z, andar de lado é curva de nível.
+  const across = { ...idle, strafe: 1 };
+  assert.ok(Math.abs(distance(2, across, ramp(27), climbing) - distance(2, across, flat, climbing)) < 0.02);
 });
 
 function simulate(seconds: number, input: PlayerInput, environment = flat) {

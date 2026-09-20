@@ -25,6 +25,12 @@ export interface Zone {
   title: string;
   /** Posição inicial da Aysha ao entrar na zona (y é ignorado: vem do terreno). */
   playerSpawn: Vec3;
+  /**
+   * Onde a malha do terreno é mais densa (XZ). A grade afina depressa com a
+   * distância, então cada zona centra o detalhe onde se caminha. Padrão: o
+   * ponto de partida — o que basta para zonas pequenas.
+   */
+  terrainFocus?: readonly [number, number];
   /** Para onde a Aysha olha ao entrar na zona. */
   spawnLookAt: Vec3;
   /** Área explorável: união de círculos (que devem se sobrepor para haver passagem). */
@@ -123,6 +129,8 @@ export interface NpcDefinition {
    * disponível; quando não há mais, repete a última disponível.
    */
   conversation: readonly ConversationEntry[];
+  /** Quando esta condição se cumprir, o NPC não está mais no mundo. */
+  leavesWhen?: Requirement;
 }
 
 /** Algo no campo que a Aysha pode examinar. */
@@ -140,7 +148,8 @@ export interface PointOfInterest {
     | "table"
     | "toy-horse"
     | "window"
-    | "note";
+    | "note"
+    | "tree";
   position: readonly [number, number];
   /** Giro no eixo vertical (rad). */
   rotation?: number;
@@ -158,8 +167,12 @@ export interface PointOfInterest {
    * Passagem para outra zona. Enquanto a condição não se cumpre, o ponto se
    * comporta normalmente (é só uma porteira); depois, atravessá-la é a ação
    * principal — vem antes da memória e do pensamento.
+   *
+   * `clears`: o que fechava a passagem deixa de existir ao abrir — some da
+   * cena e para de barrar o caminho (o ferro da saída norte). Uma porteira,
+   * que continua de pé e se abre, não usa isto.
    */
-  travel?: { zone: ZoneId; prompt: string; requires?: Requirement };
+  travel?: { zone: ZoneId; prompt: string; requires?: Requirement; clears?: boolean };
   /** Se bloqueia a passagem, o raio (m). */
   obstacleRadius?: number;
 }
@@ -221,6 +234,8 @@ export interface MachineDefinition {
   title: string;
   /** Só existe no mundo quando a história chegar até aqui. */
   requires?: Requirement;
+  /** E deixa de existir quando ela passar daqui: não há mais o que vigiar. */
+  leavesWhen?: Requirement;
   /** Pontos da patrulha (XZ), percorridos em ciclo. */
   route: readonly (readonly [number, number])[];
   /** Quanto para em cada ponto da rota (s). */

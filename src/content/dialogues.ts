@@ -289,7 +289,9 @@ export const dialogues = {
     { speaker: "cassandra", text: "Do outro lado não tem nada que valha a corrida." },
   ]),
 
-  // Depois que a Aysha sabe. Os dois seguem amáveis; é isso que incomoda.
+  // Depois que a Aysha reconhece os dois rostos, e antes de ela fechar a conta:
+  // a última vez que dá para falar com eles. Seguem amáveis, sem saber que ela
+  // já sabe — é isso que incomoda.
   "cassandra-after-truth": linear([
     { speaker: "cassandra", text: "Você está diferente. Lembrou de alguma coisa?" },
     { speaker: "narrator", text: "Aysha demora a responder." },
@@ -305,6 +307,131 @@ export const dialogues = {
     { speaker: "aysha", text: "Mas vocês chegaram antes de mim." },
     { speaker: "victor", text: "Todo mundo chega antes de alguém." },
     { speaker: "narrator", text: "Ele olha para a colina pela primeira vez desde que ela o conhece." },
+  ]),
+
+  // ── O campo vazio ──────────────────────────────────────────────────────
+  // Logo depois de entender. Os dois já não estão lá — ela conta o que vê.
+
+  "field-empty": linear([
+    { speaker: "narrator", text: "A trilha está vazia. Onde os dois esperavam, a grama está inteira: nenhuma marca de pé, nenhum caminho pisado." },
+    { speaker: "aysha", text: "Eles foram embora no instante em que eu entendi." },
+    { speaker: "narrator", text: "O zumbido que rondava o campo parou junto. Do outro lado não há mais nada se mexendo." },
+    { speaker: "aysha", text: "Não era a colina que eles estavam guardando." },
+    { speaker: "aysha", text: "Era o tempo que eu levava para lembrar." },
+  ]),
+
+  // A saída norte, agora aberta (não trava o movimento).
+  "labyrinth-open": linear(
+    [
+      { speaker: "narrator", text: "O ferro que tapava a saída norte não está mais lá. Nada foi arrancado: simplesmente não está." },
+      { speaker: "aysha", text: "Nunca esteve trancada. Só fechada enquanto eu acreditasse neles." },
+    ],
+    { blocksMovement: false },
+  ),
+
+  // ── A subida ───────────────────────────────────────────────────────────
+  // Meio quilômetro de caminhada sem nenhuma ameaça. As falas do caminho não
+  // travam o movimento — quem está subindo não para para pensar. As duas do
+  // fim travam: o cume e o que existe atrás dele pedem que ela fique parada.
+
+  "hillside-arrive": linear(
+    [
+      { speaker: "narrator", text: "A muralha fica para trás. O campo se abre outra vez, e desta vez não há nada no meio." },
+      { speaker: "aysha", text: "Nenhum zumbido. Nenhuma voz." },
+      { speaker: "narrator", text: "O chão desce até um fundo de vale e sobe do outro lado. E não para mais de subir." },
+    ],
+    { blocksMovement: false, setsFlags: ["hill-reached"] },
+  ),
+
+  "hillside-valley": linear(
+    [
+      { speaker: "narrator", text: "No fundo do vale a colina toma metade do céu." },
+      { speaker: "aysha", text: "Toda vez que eu andei nessa direção, ela ficou do mesmo tamanho." },
+      { speaker: "aysha", text: "Agora não." },
+    ],
+    { blocksMovement: false },
+  ),
+
+  // Ensina o caminho sem marcador: a trilha contorna pela esquerda.
+  "hillside-climb": linear(
+    [
+      { speaker: "narrator", text: "O chão se levanta debaixo dos pés dela. A trilha não vai reto: dá a volta pela esquerda, como quem tem o dia inteiro." },
+      { speaker: "aysha", text: "Então é subir." },
+    ],
+    { blocksMovement: false },
+  ),
+
+  "hillside-halfway": linear(
+    [
+      { speaker: "narrator", text: "Daqui o Além inteiro cabe embaixo dela: o campo, a casa, o quadrado de pedra do labirinto." },
+      { speaker: "narrator", text: "A trilha que ela subiu desenha uma curva na encosta, do pé até aqui." },
+      { speaker: "aysha", text: "E eu passei tanto tempo lá embaixo." },
+    ],
+    { blocksMovement: false },
+  ),
+
+  "hillside-summit": linear(
+    [
+      { speaker: "narrator", text: "A árvore é muito maior do que cabia no desenho. O vento passa por ela e volta." },
+      { speaker: "aysha", text: "\"Pai... o que tem depois da colina?\"" },
+      { speaker: "aysha", text: "\"Hoje não, pequena.\"" },
+      { speaker: "narrator", text: "Aysha fica parada debaixo dos galhos por um tempo que não dá para medir." },
+      { speaker: "aysha", text: "Hoje sim." },
+      { speaker: "narrator", text: "Depois da árvore o chão continua. Não acaba aqui." },
+    ],
+    { setsFlags: ["hill-climbed"] },
+  ),
+
+  "hillside-hollow": linear(
+    [
+      { speaker: "narrator", text: "Alguns passos além do cume o chão se abre numa concha, fechada em volta por uma borda de terra." },
+      { speaker: "narrator", text: "Lá dentro não venta. A luz fica parada no fundo, como água." },
+      { speaker: "aysha", text: "Do campo, daquele campo todo, este lugar nunca existiu." },
+      { speaker: "narrator", text: "Nem do cume se vê inteiro. É preciso descer até a borda." },
+      { speaker: "aysha", text: "Alguém escolheu bem." },
+    ],
+    { setsFlags: ["refuge-seen"] },
+  ),
+
+  // ── Pontos de interesse da encosta ─────────────────────────────────────
+  // Nenhum deles guarda resposta: a esta altura a Aysha já sabe tudo que
+  // precisava saber. Servem para dar ritmo e para ela olhar para trás.
+
+  "poi-hill-flowers": linear([
+    { speaker: "narrator", text: "As mesmas flores amarelas do campo, mas aqui cobrem o vale inteiro." },
+    { speaker: "aysha", text: "Eu era pequena e elas batiam no meu ombro." },
+  ]),
+
+  "poi-hill-fence": linear([
+    { speaker: "narrator", text: "Os últimos postes da cerca, tombados no começo da subida. Depois deles não há mais nenhum." },
+    { speaker: "aysha", text: "Quem cercou isto parou antes de chegar." },
+  ]),
+
+  "poi-hill-cairn": linear([
+    { speaker: "narrator", text: "Pedras empilhadas na beira da trilha. Estas não caíram: continuam de pé." },
+    { speaker: "aysha", text: "As do campo estavam tortas. Estas, não." },
+  ]),
+
+  "poi-hill-lookout": linear([
+    { speaker: "narrator", text: "Uma pedra na curva do caminho, lisa por cima de tanto alguém sentar nela." },
+    { speaker: "aysha", text: "Quem subia aqui descansava neste ponto. Sempre neste ponto." },
+  ]),
+
+  "poi-hill-horseshoe": linear([
+    { speaker: "narrator", text: "Uma ferradura na terra da trilha, gasta de um lado só." },
+    { speaker: "aysha", text: "Subiram a cavalo. Até quase o alto." },
+  ]),
+
+  "poi-summit-tree": linear([
+    { speaker: "narrator", text: "A casca é áspera e morna. Na altura do ombro de uma criança há três riscos fundos, um acima do outro." },
+    { speaker: "aysha", text: "Alguém mediu alguma coisa aqui. Mais de uma vez." },
+    { speaker: "narrator", text: "Ela encosta a testa no tronco e fica assim." },
+  ]),
+
+  "poi-hollow-stone": linear([
+    { speaker: "narrator", text: "Um bloco de pedra baixo no meio da concha, com a face de cima gasta e lisa." },
+    { speaker: "aysha", text: "Isto aqui foi usado. Muito." },
+    { speaker: "narrator", text: "Em volta dele a grama cresce mais alta do que em qualquer outro ponto da colina." },
   ]),
 
   "victor-idle": linear([{ speaker: "victor", text: "Estou de olho no horizonte. Pode ficar tranquila." }]),

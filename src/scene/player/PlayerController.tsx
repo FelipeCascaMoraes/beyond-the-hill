@@ -4,7 +4,7 @@ import { playerConfig } from "@/game/config/player";
 import { attachInput, consumeLook, readMovement } from "@/game/input/input";
 import { createPlayerState, headBobOffset, lookAngles, updatePlayer, type PlayerState } from "@/game/player/playerController";
 import { terrainHeight } from "@/game/world/terrain";
-import { getPlayerEnvironment, getSpawnPose } from "@/game/player/spawn";
+import { getSpawnPose, playerEnvironmentFor } from "@/game/player/spawn";
 import { selectCanControl, useGameStore } from "@/game/state/gameStore";
 import { prefersReducedMotion } from "@/lib/motion";
 
@@ -27,7 +27,10 @@ export function PlayerController() {
   const playerRef = useRef<PlayerState | null>(null);
   const headBob = useMemo(() => !prefersReducedMotion(), []);
 
-  const environment = useMemo(() => getPlayerEnvironment(zone), [zone]);
+  // O mundo muda no meio da zona: os dois vão embora (e levam a colisão deles),
+  // a saída norte se abre. O ambiente é refeito quando isso acontece e só
+  // então — sem isso, a Aysha continuaria esbarrando em quem não está mais ali.
+  const environment = useGameStore((state) => playerEnvironmentFor(state.zone, state));
 
   useEffect(() => {
     playerRef.current = createPlayerState(getSpawnPose(zone));

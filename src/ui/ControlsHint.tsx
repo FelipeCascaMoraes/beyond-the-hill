@@ -3,12 +3,18 @@
 import { useSyncExternalStore } from "react";
 import { isPointerLocked, subscribePointerLock } from "@/game/input/input";
 import { selectIsFree, useGameStore } from "@/game/state/gameStore";
+import { useAscent } from "./useAscent";
 
-/** Dica discreta de controles; some enquanto o mouse está travado na cena ou há diálogo/memória aberta. */
+/**
+ * Dica discreta de controles; some enquanto o mouse está travado na cena ou há
+ * diálogo/memória aberta — e não volta mais depois que a subida começa: a
+ * essa altura o jogador já sabe andar, e ali a tela é para a colina.
+ */
 export function ControlsHint() {
   const isFree = useGameStore(selectIsFree);
   const locked = useSyncExternalStore(subscribePointerLock, isPointerLocked, () => false);
-  const visible = isFree && !locked;
+  const climbing = useAscent() > 0;
+  const visible = isFree && !locked && !climbing;
 
   return (
     <div
