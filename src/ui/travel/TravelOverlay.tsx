@@ -1,10 +1,13 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import { zones } from "@/content";
 import { useGameStore } from "@/game/state/gameStore";
 import { prefersReducedMotion } from "@/lib/motion";
+
+/** Tempo máximo da travessia (ms), mesmo se a animação não terminar. */
+const RESCUE_AFTER = 8000;
 
 /** Mostra a travessia enquanto a Aysha estiver indo de uma zona para outra. */
 export function TravelOverlay() {
@@ -24,6 +27,12 @@ function TravelSequence() {
   const completeTravel = useGameStore((state) => state.completeTravel);
   const title = traveling ? zones[traveling].title : "";
   const rootRef = useRef<HTMLDivElement>(null);
+
+  // Mesma rede de segurança do apagão: a travessia sempre termina.
+  useEffect(() => {
+    const rescue = setTimeout(completeTravel, RESCUE_AFTER);
+    return () => clearTimeout(rescue);
+  }, [completeTravel]);
 
   useLayoutEffect(() => {
     const reduced = prefersReducedMotion();

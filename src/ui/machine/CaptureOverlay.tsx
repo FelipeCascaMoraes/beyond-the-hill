@@ -1,9 +1,12 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef } from "react";
 import gsap from "gsap";
 import { useGameStore } from "@/game/state/gameStore";
 import { prefersReducedMotion } from "@/lib/motion";
+
+/** Tempo máximo do apagão (ms), mesmo se a animação não terminar. */
+const RESCUE_AFTER = 8000;
 
 /** Mostra o apagão enquanto uma máquina estiver com a Aysha. */
 export function CaptureOverlay() {
@@ -22,6 +25,13 @@ export function CaptureOverlay() {
 function CaptureSequence() {
   const completeCapture = useGameStore((state) => state.completeCapture);
   const rootRef = useRef<HTMLDivElement>(null);
+
+  // Se a animação não terminar (aba em segundo plano, GSAP interrompido), o
+  // apagão acaba assim mesmo: o jogador nunca fica sem controle para sempre.
+  useEffect(() => {
+    const rescue = setTimeout(completeCapture, RESCUE_AFTER);
+    return () => clearTimeout(rescue);
+  }, [completeCapture]);
 
   useLayoutEffect(() => {
     const reduced = prefersReducedMotion();

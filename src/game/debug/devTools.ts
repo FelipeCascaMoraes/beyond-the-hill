@@ -1,5 +1,6 @@
-import type { DialogueId, MemoryId, StoryFlag, ZoneId } from "@/content";
-import { useGameStore } from "@/game/state/gameStore";
+import { dialogues, type DialogueId, type MemoryId, type StoryFlag, type ZoneId } from "@/content";
+import { inputSnapshot } from "@/game/input/input";
+import { selectCanControl, useGameStore } from "@/game/state/gameStore";
 import { setMachinesPaused } from "./devFlags";
 
 // Atalhos de teste, só em desenvolvimento: `bth` no console do navegador.
@@ -137,7 +138,9 @@ export function installDevTools(): void {
           "  bth.paz()            liga/desliga as máquinas (volta ligado com bth.paz(false))",
           "  bth.zona(\"labyrinth\") troca de zona",
           "  bth.lembranca(\"after\") toca uma lembrança agora",
-          "  bth.estado()         mostra marcos, lembranças e ameaça",
+          "  bth.estado()         mostra marcos, lembranças, ameaça e o que trava o movimento",
+          "  bth.porqueNaoAnda()  diz por que a Aysha não sai do lugar",
+          "  bth.destravar()      solta o movimento na marra",
           "",
           "Dica: bth.etapa(\"labirinto\") e depois bth.ir(\"porteira\") para testar a travessia.",
         ].join("\n"),
@@ -197,11 +200,59 @@ export function installDevTools(): void {
     },
 
     estado() {
-      const { zone, flags, recoveredMemories, seenDialogues, threat, captured, traveling } = useGameStore.getState();
+      const state = useGameStore.getState();
+      const { zone, flags, recoveredMemories, seenDialogues, threat, captured, traveling } = state;
       console.table({ zona: zone, ameaça: threat, capturada: captured, atravessando: traveling ?? "—" });
       console.log("marcos:", flags.join(", ") || "—");
       console.log("lembranças:", recoveredMemories.join(", ") || "—");
       console.log("conversas vistas:", seenDialogues.length);
+      bth.porqueNaoAnda();
+    },
+
+    /**
+     * Por que a Aysha não sai do lugar. Percorre, na ordem, tudo que tira o
+     * controle dela — e, se nada estiver travando, olha a entrada do teclado.
+     */
+    porqueNaoAnda() {
+      const state = useGameStore.getState();
+      const entrada = inputSnapshot();
+      const motivos: string[] = [];
+
+      if (state.phase !== "playing") motivos.push(`o jogo está em "${state.phase}", não em "playing"`);
+      if (!state.controlEnabled) motivos.push("controlEnabled=false (a abertura da câmera não terminou)");
+      if (state.captured) motivos.push("uma máquina está com ela (apagão da captura)");
+      if (state.traveling) motivos.push(`atravessando para "${state.traveling}"`);
+      if (state.activeMemory) motivos.push(`lembrança aberta: "${state.activeMemory.id}"`);
+      if (state.activeDialogue) {
+        const trava = dialogues[state.activeDialogue.id].blocksMovement !== false;
+        motivos.push(`diálogo aberto: "${state.activeDialogue.id}" (${trava ? "trava o movimento — aperte E" : "não trava"})`);
+      }
+      if (!entrada.ligada) motivos.push("a entrada do teclado está desligada (nenhum listener ativo)");
+
+      if (motivos.length === 0) {
+        console.log("Nada está travando o movimento. Se ela não anda, é a entrada:");
+        console.log("  teclas pressionadas agora:", entrada.teclas.join(", ") || "nenhuma");
+        console.log("  mouse travado na cena:", entrada.mouseTravado);
+        console.log("  Tente clicar na cena uma vez e usar W/A/S/D.");
+      } else {
+        console.log("O movimento está travado por:");
+        for (const motivo of motivos) console.log("  • " + motivo);
+        console.log("Para soltar tudo: bth.destravar()");
+      }
+      console.log("pode andar?", selectCanControl(state));
+    },
+
+    /** Solta o movimento na marra: fecha diálogo, lembrança, apagão e travessia. */
+    destravar() {
+      useGameStore.setState({
+        controlEnabled: true,
+        captured: false,
+        traveling: null,
+        activeMemory: null,
+        activeDialogue: null,
+        threat: "calm",
+      });
+      console.log("Destravada.");
     },
   };
 

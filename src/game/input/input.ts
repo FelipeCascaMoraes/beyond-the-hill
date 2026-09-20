@@ -111,6 +111,11 @@ export function consumeInteract(): boolean {
   return pressedNow;
 }
 
+/** Fotografia da entrada agora, para diagnóstico (ver debug/devTools.ts). */
+export function inputSnapshot(): { teclas: string[]; ligada: boolean; mouseTravado: boolean } {
+  return { teclas: [...pressed], ligada: lockTarget !== null, mouseTravado: isPointerLocked() };
+}
+
 export function isPointerLocked(): boolean {
   return lockTarget !== null && document.pointerLockElement === lockTarget;
 }
