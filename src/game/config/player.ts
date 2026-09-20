@@ -4,6 +4,8 @@ export interface PlayerConfig {
   eyeHeight: number;
   /** Velocidade de caminhada (m/s): ritmo de exploração, sem pressa. */
   walkSpeed: number;
+  /** Velocidade de corrida (m/s): só para fugir. Precisa vencer as máquinas. */
+  runSpeed: number;
   /** Rapidez para atingir a velocidade (maior = mais responsivo). */
   acceleration: number;
   /** Rapidez para parar ao soltar as teclas. */
@@ -31,6 +33,7 @@ export interface PlayerConfig {
 export const playerConfig: PlayerConfig = {
   eyeHeight: 1.62,
   walkSpeed: 2.4,
+  runSpeed: 3.8,
   acceleration: 6,
   deceleration: 8,
   lookSensitivity: 0.0016,

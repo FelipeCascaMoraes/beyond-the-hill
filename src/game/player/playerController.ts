@@ -26,6 +26,8 @@ export interface PlayerInput {
   /** Movimento do mouse desde o último frame, em pixels. */
   lookDeltaX: number;
   lookDeltaY: number;
+  /** Segurando a tecla de corrida. */
+  run?: boolean;
 }
 
 /** Obstáculo circular no plano XZ (NPCs, pedras, troncos). */
@@ -165,8 +167,9 @@ export function updatePlayer(
   }
   const sin = Math.sin(state.yaw);
   const cos = Math.cos(state.yaw);
-  const wishX = (-sin * forward + cos * strafe) * config.walkSpeed;
-  const wishZ = (-cos * forward - sin * strafe) * config.walkSpeed;
+  const moveSpeed = input.run ? config.runSpeed : config.walkSpeed;
+  const wishX = (-sin * forward + cos * strafe) * moveSpeed;
+  const wishZ = (-cos * forward - sin * strafe) * moveSpeed;
 
   const accel = damp(length > 0 ? config.acceleration : config.deceleration, dt);
   state.velocityX += (wishX - state.velocityX) * accel;
@@ -227,6 +230,6 @@ export function updatePlayer(
 
 /** Deslocamento vertical do passo; some quando a Aysha está parada. */
 export function headBobOffset(state: PlayerState, config: PlayerConfig): number {
-  const speedRatio = Math.min(1, Math.hypot(state.velocityX, state.velocityZ) / config.walkSpeed);
+  const speedRatio = Math.min(1, Math.hypot(state.velocityX, state.velocityZ) / config.runSpeed);
   return Math.sin(state.stepPhase * Math.PI * 2) * config.headBob.amplitude * speedRatio;
 }

@@ -19,6 +19,8 @@ const MAX_FRAME_TIME = 0.1;
  */
 export function PlayerController() {
   const zone = useGameStore((state) => state.zone);
+  // Sobe a cada renascimento (capturada por uma máquina): refaz a pose inicial.
+  const spawnEpoch = useGameStore((state) => state.spawnEpoch);
   const controlEnabled = useGameStore((state) => state.controlEnabled);
   const canControl = useGameStore(selectCanControl);
   const canvas = useThree((state) => state.gl.domElement);
@@ -29,7 +31,7 @@ export function PlayerController() {
 
   useEffect(() => {
     playerRef.current = createPlayerState(getSpawnPose(zone));
-  }, [zone]);
+  }, [zone, spawnEpoch]);
 
   // Só em desenvolvimento: window.__bthPlayer.teleport(x, z, olharX?, olharZ?, olharY?).
   useEffect(() => {
@@ -54,7 +56,7 @@ export function PlayerController() {
     const look = consumeLook();
     updatePlayer(
       player,
-      { forward: movement.forward, strafe: movement.strafe, lookDeltaX: look.x, lookDeltaY: look.y },
+      { forward: movement.forward, strafe: movement.strafe, run: movement.run, lookDeltaX: look.x, lookDeltaY: look.y },
       Math.min(delta, MAX_FRAME_TIME),
       environment,
       playerConfig,

@@ -7,3 +7,4 @@ export * from "./npcs";
 export * from "./story";
 export * from "./pointsOfInterest";
 export * from "./areas";
+export * from "./machines";

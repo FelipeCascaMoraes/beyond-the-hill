@@ -192,4 +192,38 @@ export interface Memory {
   setsFlags?: readonly StoryFlag[];
 }
 
+// ── Máquinas ─────────────────────────────────────────────────────────────
+// A ameaça do Além. Elas patrulham, detectam, perseguem e desistem — não
+// atacam: alcançar a Aysha a devolve ao começo da zona. Ver game/machine.
+
+export interface MachineDefinition {
+  zone: ZoneId;
+  /** Nome curto, para textos que falem dela. */
+  title: string;
+  /** Só existe no mundo quando a história chegar até aqui. */
+  requires?: Requirement;
+  /** Pontos da patrulha (XZ), percorridos em ciclo. */
+  route: readonly (readonly [number, number])[];
+  /** Quanto para em cada ponto da rota (s). */
+  pause: number;
+  /** A área que ela guarda: se a Aysha sair dela, a máquina desiste. */
+  territory: ZoneBounds;
+  vision: {
+    /** Até onde enxerga (m). */
+    range: number;
+    /** Meia-abertura do cone de visão (rad). */
+    halfAngle: number;
+    /** Dentro deste raio percebe a Aysha mesmo de costas (m). */
+    awareness: number;
+  };
+  /** Velocidades (m/s). A de perseguição fica entre andar e correr. */
+  speed: { patrol: number; chase: number; return: number };
+  /** Tempo olhando antes de partir para cima e tempo sem ver antes de desistir (s). */
+  timing: { detect: number; lose: number };
+  /** Distância em que alcança a Aysha (m). */
+  reach: number;
+  /** Altura em que flutua sobre o terreno (m). */
+  hover: number;
+}
+
 export type EndingChoice = "forgive" | "revenge";

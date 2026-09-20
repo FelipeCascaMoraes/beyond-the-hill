@@ -138,6 +138,38 @@ export const dialogues = {
     { setsFlags: ["hill-familiar"] },
   ),
 
+  // ── As máquinas ────────────────────────────────────────────────────────
+  // Aviso, fuga e captura. Nada de combate: a Aysha só pode correr ou sumir.
+
+  // Quando a primeira máquina passa a rondar o campo (não trava o movimento).
+  "machine-arrives": linear(
+    [
+      { speaker: "narrator", text: "Um zumbido metálico atravessa o campo, longe, indo e voltando." },
+      { speaker: "aysha", text: "É disso que o Victor falava." },
+      { speaker: "narrator", text: "Alguma coisa se move na altura da grama, entre ela e a casa." },
+    ],
+    { blocksMovement: false, setsFlags: ["machine-seen"] },
+  ),
+
+  // Uma vez só, quando ela escapa de uma perseguição.
+  "machine-escaped": linear(
+    [
+      { speaker: "narrator", text: "O zumbido afina e se afasta. Ela não solta o ar de uma vez." },
+      { speaker: "aysha", text: "Ela desistiu. Dessa vez." },
+    ],
+    { blocksMovement: false },
+  ),
+
+  // Depois do apagão: a Aysha acorda onde começou, inteira e sem tempo nenhum.
+  "machine-caught": linear(
+    [
+      { speaker: "narrator", text: "Ela acorda na grama, no mesmo lugar do primeiro instante." },
+      { speaker: "aysha", text: "Nem um arranhão. Ela não quis me machucar..." },
+      { speaker: "aysha", text: "Ela quis me levar de volta." },
+    ],
+    { setsFlags: ["machine-caught"] },
+  ),
+
   // ── Conversas seguintes ────────────────────────────────────────────────
   "cassandra-hill": linear([
     { speaker: "aysha", text: "Aquela colina... eu sinto que já estive lá." },
@@ -164,6 +196,21 @@ export const dialogues = {
     { speaker: "narrator", text: "Victor olha na direção da casa por um instante longo demais." },
     { speaker: "victor", text: "O Além guarda pedaços de quem chega. Não quer dizer nada." },
     { speaker: "victor", text: "Não fica muito tempo lá dentro." },
+  ]),
+
+  "victor-machine": linear([
+    { speaker: "aysha", text: "Ela esteve perto. Aquela coisa." },
+    { speaker: "victor", text: "Então você já sabe. Elas não matam. Elas devolvem." },
+    { speaker: "aysha", text: "Devolvem para onde?" },
+    { speaker: "victor", text: "Para o começo. Sempre para o começo." },
+    { speaker: "narrator", text: "Ele diz isso como quem já contou os dias." },
+  ]),
+
+  "cassandra-machine": linear([
+    { speaker: "cassandra", text: "Você correu. Fez certo." },
+    { speaker: "cassandra", text: "Fica deste lado do campo, perto da gente, e ela não te alcança." },
+    { speaker: "aysha", text: "E do outro lado?" },
+    { speaker: "cassandra", text: "Do outro lado não tem nada que valha a corrida." },
   ]),
 
   "victor-idle": linear([{ speaker: "victor", text: "Estou de olho no horizonte. Pode ficar tranquila." }]),

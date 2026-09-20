@@ -6,7 +6,8 @@ const FORWARD = ["KeyW", "ArrowUp"];
 const BACKWARD = ["KeyS", "ArrowDown"];
 const LEFT = ["KeyA", "ArrowLeft"];
 const RIGHT = ["KeyD", "ArrowRight"];
-const MOVEMENT_KEYS = new Set([...FORWARD, ...BACKWARD, ...LEFT, ...RIGHT]);
+const RUN = ["ShiftLeft", "ShiftRight"];
+const MOVEMENT_KEYS = new Set([...FORWARD, ...BACKWARD, ...LEFT, ...RIGHT, ...RUN]);
 const INTERACT_KEYS = new Set(["KeyE"]);
 
 /** Alguns navegadores entregam saltos enormes de movimento ao travar o mouse. */
@@ -87,10 +88,11 @@ export function attachInput(element: HTMLElement): () => void {
   };
 }
 
-export function readMovement(): { forward: number; strafe: number } {
+export function readMovement(): { forward: number; strafe: number; run: boolean } {
   return {
     forward: axis(FORWARD) - axis(BACKWARD),
     strafe: axis(RIGHT) - axis(LEFT),
+    run: RUN.some((key) => pressed.has(key)),
   };
 }
 

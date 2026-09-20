@@ -1,6 +1,7 @@
 import { getQualitySettings } from "@/game/config/quality";
 import { HOUSE } from "@/game/world/house";
 import { ZoneNpcs } from "../actors/ZoneNpcs";
+import { ZoneMachines } from "../machines/ZoneMachines";
 import { ZonePointsOfInterest, poiGrassClearings } from "../poi/PointsOfInterest";
 import { AbandonedHouse } from "../world/AbandonedHouse";
 import { Grass } from "../world/Grass";
@@ -9,7 +10,11 @@ import { Motes } from "../world/Motes";
 /** Referência estável: a grama só é gerada uma vez. Inclui o quintal da casa (grama baixa). */
 const CLEARINGS = [...poiGrassClearings("arrival"), { x: HOUSE.x, z: HOUSE.z, radius: 8, floor: 0.35 }];
 
-/** Campo onde Aysha desperta no Além: grama alta, silêncio, luz suspensa, pequenas lembranças e uma casa. */
+/**
+ * Campo onde Aysha desperta no Além: grama alta, silêncio, luz suspensa,
+ * pequenas lembranças e uma casa. Depois da primeira memória, uma máquina
+ * passa a rondar o trecho entre a trilha e a casa.
+ */
 export function ArrivalZone() {
   const quality = getQualitySettings();
   return (
@@ -18,6 +23,7 @@ export function ArrivalZone() {
       <Motes count={quality.motes} />
       <AbandonedHouse />
       <ZoneNpcs zone="arrival" />
+      <ZoneMachines zone="arrival" />
       <ZonePointsOfInterest zone="arrival" />
     </>
   );

@@ -46,6 +46,16 @@ body {
   50% { opacity: 0.9; }
 }
 
+/* Bordas da tela enquanto uma máquina persegue: respiração curta e ansiosa. */
+.threat-pulse {
+  animation: threat-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes threat-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
 /* Cada fragmento de memória surge de um desfoque, como algo que volta aos poucos. */
 @keyframes memory-fragment-in {
   from { opacity: 0; filter: blur(6px); transform: translateY(6px); }
@@ -66,7 +76,8 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .film-grain,
-  .hill-glow {
+  .hill-glow,
+  .threat-pulse {
     animation: none;
   }
 }

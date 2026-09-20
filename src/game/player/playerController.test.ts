@@ -8,6 +8,7 @@ import { createPlayerState, headBobOffset, lookAngles, updatePlayer, type Player
 const config: PlayerConfig = {
   eyeHeight: 1.6,
   walkSpeed: 2,
+  runSpeed: 4,
   acceleration: 6,
   deceleration: 8,
   lookSensitivity: 0.002,
@@ -25,7 +26,17 @@ const flat: PlayerEnvironment = {
 };
 
 const idle: PlayerInput = { forward: 0, strafe: 0, lookDeltaX: 0, lookDeltaY: 0 };
+const forward: PlayerInput = { ...idle, forward: 1 };
 const DT = 1 / 60;
+
+test("correr é mais rápido que caminhar, e para na velocidade de corrida", () => {
+  const walking = simulate(2, forward);
+  const running = simulate(2, { ...forward, run: true });
+  const walked = Math.hypot(walking.x, walking.z);
+  const ran = Math.hypot(running.x, running.z);
+  assert.ok(ran > walked, `correndo ${ran.toFixed(2)} m, andando ${walked.toFixed(2)} m`);
+  assert.ok(Math.hypot(running.velocityX, running.velocityZ) <= config.runSpeed + 1e-6);
+});
 
 function simulate(seconds: number, input: PlayerInput, environment = flat) {
   const player = createPlayerState({ x: 0, z: 0, eyeY: config.eyeHeight, yaw: 0, pitch: 0 });

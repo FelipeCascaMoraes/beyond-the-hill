@@ -3,7 +3,15 @@ import type { StoryBeat } from "./types";
 // Progressão narrativa: marcos da história e momentos que acontecem sozinhos.
 
 /** Marcos da história, ligados ao fim de diálogos (`setsFlags`). */
-export const storyFlags = ["met-guides", "hill-familiar", "first-memory", "found-drawing", "parents-lost"] as const;
+export const storyFlags = [
+  "met-guides",
+  "hill-familiar",
+  "first-memory",
+  "found-drawing",
+  "parents-lost",
+  "machine-seen",
+  "machine-caught",
+] as const;
 export type StoryFlag = (typeof storyFlags)[number];
 
 /** Pensamentos dos pontos de interesse do campo de chegada. */
@@ -38,6 +46,13 @@ export const storyBeats = {
     dialogue: "arrival-hill-familiar",
     requires: { flags: ["met-guides"], seenAtLeast: { dialogues: arrivalPoiDialogues, count: 3 } },
     delay: 2.5,
+  },
+  // Depois da primeira lembrança o Além mostra os dentes: algo ronda o campo.
+  "machine-arrives": {
+    zone: "arrival",
+    dialogue: "machine-arrives",
+    requires: { flags: ["first-memory"] },
+    delay: 4,
   },
 } as const satisfies Record<string, StoryBeat>;
 

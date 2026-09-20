@@ -6,6 +6,8 @@ import { TitleScreen } from "./title/TitleScreen";
 import { ControlsHint } from "./ControlsHint";
 import { DialogueBox } from "./dialogue/DialogueBox";
 import { InteractionPrompt } from "./InteractionPrompt";
+import { CaptureOverlay } from "./machine/CaptureOverlay";
+import { ThreatVignette } from "./machine/ThreatVignette";
 import { MemoryOverlay } from "./memory/MemoryOverlay";
 
 /** Camada HTML sobre o canvas. Não bloqueia o mouse, exceto nos próprios elementos. */
@@ -18,10 +20,12 @@ export function GameUI() {
     <div className="pointer-events-none absolute inset-0">
       {phase === "playing" && (
         <>
+          <ThreatVignette />
           <ControlsHint />
           <InteractionPrompt />
           <DialogueBox />
           <MemoryOverlay />
+          <CaptureOverlay />
         </>
       )}
       {titleVisible && <TitleScreen onExited={() => setTitleVisible(false)} />}

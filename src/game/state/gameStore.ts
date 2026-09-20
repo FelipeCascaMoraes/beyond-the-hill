@@ -19,6 +19,7 @@ import {
   type DialogueCursor,
 } from "@/game/dialogue/runner";
 import { canActivate, fragmentTone, isLastFragment, memoryStatus, type MemoryStatus } from "@/game/memory/memoryLogic";
+import type { MachineAlert } from "@/game/machine/machineLogic";
 
 export type GamePhase = "title" | "playing" | "ending";
 
@@ -57,6 +58,15 @@ interface GameState {
   activeMemory: ActiveMemory | null;
   /** Memórias já vividas até o fim. */
   recoveredMemories: readonly MemoryId[];
+  /** O quanto as máquinas apertam agora: move a UI e o som, nada mais. */
+  threat: MachineAlert;
+  /** Uma máquina alcançou a Aysha: apagão, sem controle, até ela acordar. */
+  captured: boolean;
+  /**
+   * Sobe a cada vez que a Aysha precisa renascer no começo da zona. O
+   * controlador do jogador observa este número para recriar a pose.
+   */
+  spawnEpoch: number;
   endingChoice: EndingChoice | null;
 }
 
@@ -78,6 +88,11 @@ interface GameActions {
   advanceMemory: () => void;
   /** Encerra a memória: registra como recuperada, aplica marcos e devolve o controle. */
   completeMemory: () => void;
+  setThreat: (threat: MachineAlert) => void;
+  /** Uma máquina alcançou a Aysha. Não há combate: começa o apagão. */
+  captureByMachine: () => void;
+  /** Fim do apagão: a Aysha acorda no começo da zona e pensa no que houve. */
+  completeCapture: () => void;
   chooseEnding: (choice: EndingChoice) => void;
 }
 
@@ -92,6 +107,9 @@ const initialState: GameState = {
   flags: [],
   activeMemory: null,
   recoveredMemories: [],
+  threat: "calm",
+  captured: false,
+  spawnEpoch: 0,
   endingChoice: null,
 };
 
@@ -185,6 +203,26 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
       };
     }),
 
+  setThreat: (threat) => set((state) => (state.threat === threat ? {} : { threat })),
+
+  captureByMachine: () => {
+    const state = get();
+    // Durante uma lembrança a máquina fica parada; nada de apagão sobre apagão.
+    if (state.captured || state.activeMemory) return;
+    set({
+      captured: true,
+      threat: "calm",
+      activeDialogue: null,
+      interactionFocus: null,
+      seenDialogues: state.activeDialogue ? addUnique(state.seenDialogues, state.activeDialogue.id) : state.seenDialogues,
+    });
+  },
+
+  completeCapture: () => {
+    set((state) => ({ captured: false, spawnEpoch: state.spawnEpoch + 1 }));
+    get().startDialogue("machine-caught");
+  },
+
   chooseEnding: (choice) => set({ endingChoice: choice, phase: "ending" }),
 }));
 
@@ -193,11 +231,11 @@ export const selectDialogueBlocksMovement = (state: GameState): boolean =>
   state.activeDialogue !== null && dialogues[state.activeDialogue.id].blocksMovement !== false;
 
 /**
- * O jogador pode andar e olhar agora? Falso durante a abertura, com memória
- * aberta e durante diálogos que travam o movimento.
+ * O jogador pode andar e olhar agora? Falso durante a abertura, no apagão de
+ * uma captura, com memória aberta e durante diálogos que travam o movimento.
  */
 export const selectCanControl = (state: GameState): boolean =>
-  state.controlEnabled && state.activeMemory === null && !selectDialogueBlocksMovement(state);
+  state.controlEnabled && !state.captured && state.activeMemory === null && !selectDialogueBlocksMovement(state);
 
 /** Estado de uma memória para o progresso atual (bloqueada/desbloqueada/recuperada). */
 export const selectMemoryStatus =
