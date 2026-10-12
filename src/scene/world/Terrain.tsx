@@ -16,8 +16,10 @@ export function Terrain() {
   const geometry = useMemo(() => createTerrainGeometry([focusX, focusZ]), [focusX, focusZ]);
   useEffect(() => () => geometry.dispose(), [geometry]);
 
+  // Depois da grama e do que está em pé sobre ele: o chão que ficou escondido
+  // atrás disso tudo é descartado pelo teste de profundidade antes de ser pintado.
   return (
-    <mesh geometry={geometry} matrixAutoUpdate={false}>
+    <mesh geometry={geometry} matrixAutoUpdate={false} renderOrder={1}>
       <meshLambertMaterial vertexColors />
     </mesh>
   );

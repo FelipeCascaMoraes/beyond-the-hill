@@ -7,6 +7,7 @@ export const motesVertexShader = /* glsl */ `
   uniform float uRange;
   uniform float uEyeHeight;
   uniform float uPixelRatio;
+  uniform vec3 uSunDirection;
 
   attribute float aSeed;
 
@@ -26,13 +27,19 @@ export const motesVertexShader = /* glsl */ `
     gl_Position = projectionMatrix * mvPosition;
 
     float depth = max(-mvPosition.z, 0.1);
-    gl_PointSize = min((1.5 + aSeed * 2.5) * (18.0 / depth), 4.0) * uPixelRatio;
+    float size = (1.5 + aSeed * 2.5) * (18.0 / depth);
+    gl_PointSize = min(size, 7.0) * uPixelRatio;
 
     // Some no chão, no topo e perto da borda do volume (sem "pulos" ao repetir); pisca devagar.
     float edges = smoothstep(0.0, 0.8, local.y) * (1.0 - smoothstep(uHeight - 1.5, uHeight, local.y));
     float fade = 1.0 - smoothstep(uRange * 0.55, uRange * 0.95, length(relative));
     float twinkle = 0.55 + 0.45 * sin(uTime * (0.6 + aSeed) + aSeed * 90.0);
-    vAlpha = edges * fade * twinkle;
+    // Poeira só brilha contra a luz: olhando para o sol ela acende, de costas
+    // para ele quase some. Sem isto os pontos parecem estrelas num céu de dia.
+    float backlit = pow(max(dot(normalize(world - cameraPosition), uSunDirection), 0.0), 2.0);
+    // E longe demais ela vira um pixel solto — um defeito, não poeira: some.
+    float nearEnough = smoothstep(1.6, 3.2, size);
+    vAlpha = edges * fade * twinkle * nearEnough * (0.06 + 0.94 * backlit);
   }
 `;
 

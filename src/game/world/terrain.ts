@@ -87,6 +87,13 @@ const CLIMB_FADE = 36;
 /** Raio ao redor do despertar em que o campo é quase plano. */
 const CALM_RADIUS = 10;
 
+/**
+ * Distância no plano. `Math.hypot` é várias vezes mais lento que a raiz
+ * direta, e esta função roda centenas de milhares de vezes ao gerar o terreno
+ * e a grama de uma zona — é o tempo de tela escura numa travessia.
+ */
+const distance = (dx: number, dz: number) => Math.sqrt(dx * dx + dz * dz);
+
 function hillHeight(x: number, z: number): number {
   const dx = (x - HILL.x) / (x < HILL.x ? HILL.radiusLeft : HILL.radiusRight);
   const dz = (z - HILL.z) / HILL.radiusZ;
@@ -101,12 +108,12 @@ function hillHeight(x: number, z: number): number {
 
 /** O anel e o fundo da concha, somados ao relevo da colina. */
 function hollowHeight(x: number, z: number): number {
-  const distance = Math.hypot(x - HOLLOW.x, z - HOLLOW.z);
+  const fromCenter = distance(x - HOLLOW.x, z - HOLLOW.z);
   // O anel abre uma brecha do lado do cume, ou a Aysha teria de escalar a borda.
-  const toGate = Math.hypot(x - HOLLOW.x, z - (HOLLOW.z + HOLLOW.radius));
+  const toGate = distance(x - HOLLOW.x, z - (HOLLOW.z + HOLLOW.radius));
   const gate = 1 - HOLLOW.gate.depth * Math.exp(-((toGate / HOLLOW.gate.width) ** 2));
-  const rim = HOLLOW.rimHeight * gate * Math.exp(-(((distance - HOLLOW.radius) / HOLLOW.rimWidth) ** 2));
-  const bowl = -HOLLOW.depth * (1 - smoothstep(0, HOLLOW.radius, distance));
+  const rim = HOLLOW.rimHeight * gate * Math.exp(-(((fromCenter - HOLLOW.radius) / HOLLOW.rimWidth) ** 2));
+  const bowl = -HOLLOW.depth * (1 - smoothstep(0, HOLLOW.radius, fromCenter));
   return rim + bowl;
 }
 
@@ -129,9 +136,9 @@ const PADS: readonly GroundPad[] = [HOUSE_PAD, LABYRINTH_PAD];
 export function terrainHeight(x: number, z: number): number {
   let height = climbRamp(x, z, naturalHeight(x, z));
   for (const pad of PADS) {
-    const distance = Math.hypot(x - pad.x, z - pad.z);
-    if (distance >= pad.radius + pad.feather) continue;
-    const flatten = 1 - smoothstep(pad.radius, pad.radius + pad.feather, distance);
+    const fromPad = distance(x - pad.x, z - pad.z);
+    if (fromPad >= pad.radius + pad.feather) continue;
+    const flatten = 1 - smoothstep(pad.radius, pad.radius + pad.feather, fromPad);
     height += (padHeight(pad) - height) * flatten;
   }
   return height;
@@ -143,21 +150,34 @@ const rampSegments = CLIMB_PATH.flatMap((from, index) => {
   return from.y !== undefined && to?.y !== undefined ? [{ from, to }] : [];
 }) as readonly { from: Required<ClimbPoint>; to: Required<ClimbPoint> }[];
 
+/** O retângulo que contém a rampa inteira, com a largura do esfumado em volta. */
+const rampXs = rampSegments.flatMap(({ from, to }) => [from.x, to.x]);
+const rampZs = rampSegments.flatMap(({ from, to }) => [from.z, to.z]);
+const rampArea = {
+  minX: Math.min(...rampXs) - CLIMB_FADE,
+  maxX: Math.max(...rampXs) + CLIMB_FADE,
+  minZ: Math.min(...rampZs) - CLIMB_FADE,
+  maxZ: Math.max(...rampZs) + CLIMB_FADE,
+} as const;
+
 /**
  * Puxa o terreno perto da trilha para o perfil escrito em `CLIMB_PATH`. Longe
  * dela o valor não muda, então a colina continua sendo a colina — a rampa é um
  * corte na encosta, não uma reforma.
  */
 function climbRamp(x: number, z: number, natural: number): number {
+  // Fora da faixa da rampa não há o que procurar: é o caso de todo o campo e
+  // do labirinto, e poupa o laço pelos trechos em cada ponto do terreno.
+  if (x < rampArea.minX || x > rampArea.maxX || z < rampArea.minZ || z > rampArea.maxZ) return natural;
   let best = CLIMB_FADE;
   let target = 0;
   for (const { from, to } of rampSegments) {
     const dx = to.x - from.x;
     const dz = to.z - from.z;
     const t = Math.min(1, Math.max(0, ((x - from.x) * dx + (z - from.z) * dz) / (dx * dx + dz * dz)));
-    const distance = Math.hypot(x - (from.x + dx * t), z - (from.z + dz * t));
-    if (distance >= best) continue;
-    best = distance;
+    const fromSegment = distance(x - (from.x + dx * t), z - (from.z + dz * t));
+    if (fromSegment >= best) continue;
+    best = fromSegment;
     target = from.y + (to.y - from.y) * t;
   }
   if (best >= CLIMB_FADE) return natural;
@@ -187,7 +207,7 @@ function naturalHeight(x: number, z: number): number {
 
   // Ondulação natural, contida perto do despertar e sobre a colina (silhueta limpa).
   const rolling = (fbm(x * 0.006, z * 0.006) - 0.5) * 14 + (fbm(x * 0.03 + 100, z * 0.03) - 0.5) * 2.5;
-  const calm = 0.2 + 0.8 * smoothstep(CALM_RADIUS, 80, Math.hypot(x, z));
+  const calm = 0.2 + 0.8 * smoothstep(CALM_RADIUS, 80, distance(x, z));
   const onHill = Math.min(1, hill / 60);
 
   // Crista intermediária: baixa no centro, mais alta nas laterais (moldura em V).

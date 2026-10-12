@@ -1,3 +1,4 @@
+import type { ChoiceId } from "../../content/choices.ts";
 import type { DialogueId } from "../../content/dialogues.ts";
 import type { MemoryId } from "../../content/memories.ts";
 import type { StoryFlag } from "../../content/story.ts";
@@ -10,6 +11,8 @@ export interface StoryContext {
   flags: readonly StoryFlag[];
   seenDialogues: readonly DialogueId[];
   recoveredMemories: readonly MemoryId[];
+  /** Decisões já tomadas (ausente = nenhuma). */
+  choices?: { readonly [Id in ChoiceId]?: string };
 }
 
 export function meetsRequirement(requirement: Requirement | undefined, context: StoryContext): boolean {
@@ -20,6 +23,11 @@ export function meetsRequirement(requirement: Requirement | undefined, context: 
     const { dialogues, count } = requirement.seenAtLeast;
     const seen = dialogues.filter((id) => context.seenDialogues.includes(id)).length;
     if (seen < count) return false;
+  }
+  if (requirement.choices) {
+    for (const id of Object.keys(requirement.choices) as ChoiceId[]) {
+      if (context.choices?.[id] !== requirement.choices[id]) return false;
+    }
   }
   return true;
 }

@@ -59,8 +59,11 @@ export function createTerrainGeometry(focus: readonly [number, number] = [0, 0])
     color.multiplyScalar(0.85 + fbm(x * 0.2, z * 0.2, 2) * 0.3);
 
     // Quintal de terra batida em volta da casa abandonada.
-    const fromHouse = Math.hypot(x - HOUSE.x, z - HOUSE.z);
-    if (fromHouse < 10) color.lerp(trailColor, (1 - smoothstep(4, 10, fromHouse)) * 0.6);
+    const houseX = x - HOUSE.x;
+    const houseZ = z - HOUSE.z;
+    if (houseX * houseX + houseZ * houseZ < 100) {
+      color.lerp(trailColor, (1 - smoothstep(4, 10, Math.sqrt(houseX * houseX + houseZ * houseZ))) * 0.6);
+    }
 
     // Terra batida da trilha, só perto do campo.
     if (Math.abs(z) < 120) {
@@ -71,6 +74,8 @@ export function createTerrainGeometry(focus: readonly [number, number] = [0, 0])
   }
 
   geometry.setAttribute("color", new BufferAttribute(colors, 3));
+  // O chão não tem textura: as coordenadas dela só ocupariam memória na GPU.
+  geometry.deleteAttribute("uv");
   geometry.computeVertexNormals();
   return geometry;
 }
@@ -100,8 +105,13 @@ function clearingFactor(x: number, z: number, clearings: readonly GrassClearing[
   let factor = 1;
   for (const clearing of clearings) {
     if (clearing.radius <= 0) continue;
+    // Quase toda folha está fora de quase toda clareira: sai antes da raiz.
+    const dx = x - clearing.x;
+    const dz = z - clearing.z;
+    const squared = dx * dx + dz * dz;
+    if (squared >= clearing.radius * clearing.radius) continue;
     const floor = clearing.floor ?? 0.15;
-    const distance = Math.hypot(x - clearing.x, z - clearing.z);
+    const distance = Math.sqrt(squared);
     factor = Math.min(factor, floor + (1 - floor) * smoothstep(clearing.radius * 0.4, clearing.radius, distance));
   }
   return factor;
@@ -150,7 +160,10 @@ export function createGrassGeometry({
     offsets[i * 3 + 1] = terrainHeight(x, z) - 0.04;
     offsets[i * 3 + 2] = z;
 
-    const edge = 1 - smoothstep(radius * 0.7, radius, r);
+    // A borda da mancha: a grama baixa até sumir, e o contorno ondula — senão
+    // cada mancha vira um disco recortado no morro, visível de longe.
+    const ragged = 0.55 + 0.3 * fbm(Math.cos(angle) * 3 + seed, Math.sin(angle) * 3, 2);
+    const edge = 1 - smoothstep(radius * ragged, radius, r);
     const clumps = 0.55 + 0.9 * fbm(x * 0.07, z * 0.07, 3);
     const distanceFactor = r / radius;
     // Grama baixa e pisada na trilha: uma linha natural que conduz o olhar à colina.
@@ -158,7 +171,7 @@ export function createGrassGeometry({
 
     params[i * 4] = random() * Math.PI * 2;
     params[i * 4 + 1] =
-      (0.3 + random() * 0.5) * clumps * (0.25 + 0.75 * edge) * trodden * clearingFactor(x, z, clearings) *
+      (0.3 + random() * 0.5) * clumps * edge * trodden * clearingFactor(x, z, clearings) *
       (isInsideHouse(x, z) ? 0 : 1);
     // Folhas distantes mais largas para cobrir o chão com menos instâncias.
     params[i * 4 + 2] = (0.05 + random() * 0.05) * (1 + distanceFactor * 1.8);
@@ -200,7 +213,9 @@ export function createMotesGeometry({ count, range, height, seed }: MotesOptions
 
 /**
  * Árvore solitária low-poly: tronco inclinado e copa larga em "guarda-chuva".
- * Peças unidas em uma única geometria (1 draw call). Altura ~1 unidade = 1 m.
+ * Peças unidas em uma única geometria com dois grupos — madeira (material 0)
+ * e copa (material 1) —, para as duas partes poderem ter cor própria de perto.
+ * Altura ~1 unidade = 1 m.
  */
 export function createTreeGeometry(seed: number): BufferGeometry {
   const random = createRandom(seed);
@@ -240,7 +255,13 @@ export function createTreeGeometry(seed: number): BufferGeometry {
     parts.push(blob);
   }
 
+  const wood = 3; // tronco + dois galhos: as primeiras peças
+  const woodVertices = parts.slice(0, wood).reduce((sum, part) => sum + part.getAttribute("position").count, 0);
   const tree = mergeGeometries(parts);
+  // Dois grupos, não um por peça: cada grupo é um draw call, e dez peças
+  // seriam dez chamadas para desenhar uma árvore de duas cores.
+  tree.addGroup(0, woodVertices, 0);
+  tree.addGroup(woodVertices, tree.getAttribute("position").count - woodVertices, 1);
   parts.forEach((part) => part.dispose());
   return tree;
 }

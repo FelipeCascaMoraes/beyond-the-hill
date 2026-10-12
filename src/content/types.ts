@@ -1,5 +1,6 @@
 // Tipos dos dados narrativos. Nada aqui depende de React ou Three.js.
 import type { CharacterId } from "./characters";
+import type { ChoiceId } from "./choices";
 import type { DialogueId } from "./dialogues";
 import type { MemoryId } from "./memories";
 import type { StoryFlag } from "./story";
@@ -103,6 +104,8 @@ export interface Requirement {
   seenAtLeast?: { dialogues: readonly DialogueId[]; count: number };
   /** Memórias que já precisam ter sido recuperadas. */
   memories?: readonly MemoryId[];
+  /** Decisões já tomadas, com o valor escolhido (`content/choices.ts`). */
+  choices?: { readonly [Id in ChoiceId]?: string };
 }
 
 /** Momento que o jogo dispara sozinho, uma única vez, quando o jogador está livre. */
@@ -129,8 +132,22 @@ export interface NpcDefinition {
    * disponível; quando não há mais, repete a última disponível.
    */
   conversation: readonly ConversationEntry[];
+  /** Enquanto esta condição não se cumprir, o NPC ainda não está no mundo. */
+  requires?: Requirement;
   /** Quando esta condição se cumprir, o NPC não está mais no mundo. */
   leavesWhen?: Requirement;
+  /** Texto do prompt no lugar de "Falar com {nome}". */
+  prompt?: string;
+  /**
+   * Quem é, se não for o próprio id: a mesma pessoa pode estar em dois
+   * lugares da história (Cassandra no campo e, no fim, na beira do refúgio).
+   */
+  character?: Exclude<CharacterId, "aysha">;
+  /**
+   * Como vai embora quando `leavesWhen` se cumpre. Padrão: some de uma vez,
+   * sem ser visto indo. `fade`: recua alguns passos e se apaga, à vista.
+   */
+  exit?: "fade";
 }
 
 /** Algo no campo que a Aysha pode examinar. */
@@ -186,7 +203,9 @@ export type MemoryTrigger =
   /** Por um objeto interativo com a ação `{ type: "memory" }`. */
   | { type: "interaction" }
   /** Sozinha, assim que desbloqueia e o jogador está livre, após `delay` segundos. */
-  | { type: "auto"; delay: number };
+  | { type: "auto"; delay: number }
+  /** Por uma cena (`content/cinematics.ts`): nunca sozinha, nunca por um objeto. */
+  | { type: "scene" };
 
 /** Um trecho do conteúdo de uma memória, mostrado um de cada vez. */
 export interface MemoryFragment {
@@ -260,4 +279,84 @@ export interface MachineDefinition {
   hover: number;
 }
 
-export type EndingChoice = "forgive" | "revenge";
+// ── Cenas ────────────────────────────────────────────────────────────────
+// Uma cena tira a câmera do jogador e conta um momento em passos, um depois
+// do outro. Enquanto dura, a Aysha não anda nem interage; no fim, a câmera
+// volta e o controle também. Ver game/cinematic e scene/cinematic.
+
+/** Ponto com altura relativa ao chão sob ele: [x, altura, z]. */
+export type GroundPoint = readonly [number, number, number];
+
+/** Um enquadramento: de onde a câmera olha e para onde. */
+export interface CameraShot {
+  position: GroundPoint;
+  target: GroundPoint;
+}
+
+/** O que um passo faz. */
+type CinematicAction =
+  /**
+   * Leva a câmera a um enquadramento em `move` segundos. O passo termina
+   * depois de `wait` segundos (padrão: `move`); com `wait: 0` a câmera segue
+   * andando enquanto os próximos passos já acontecem.
+   */
+  | { type: "shot"; shot: CameraShot; move: number; wait?: number }
+  | { type: "pause"; seconds: number }
+  /** Registra marcos da história (alguém aparece, algo muda no mundo). */
+  | { type: "flags"; flags: readonly StoryFlag[] }
+  /** Abre um diálogo e espera ele terminar. */
+  | { type: "dialogue"; dialogue: DialogueId }
+  /** Abre uma lembrança e espera ela terminar. */
+  | { type: "memory"; memory: MemoryId }
+  /** Uma frase sozinha na tela, sobre o mundo escurecido. */
+  | { type: "title"; text: string; seconds: number }
+  /** Pede uma decisão (`content/choices.ts`) e espera ela ser tomada. */
+  | { type: "choice"; choice: ChoiceId }
+  /**
+   * O fim do jogo: a tela escurece sobre o último enquadramento e mostra o
+   * título e a palavra final. Não termina — é o último passo que existe.
+   */
+  | { type: "finale"; title: string; subtitle: string };
+
+/**
+ * Um passo da cena. Com `when`, só acontece se a condição se cumprir no
+ * instante em que a cena chega nele — é assim que uma escolha feita num passo
+ * decide quais passos vêm depois, dentro da mesma cena.
+ */
+export type CinematicStep = CinematicAction & { when?: Requirement };
+
+export interface Cinematic {
+  zone: ZoneId;
+  /**
+   * Começa ao entrar neste círculo, uma vez só. Com `delay`, só depois de a
+   * Aysha ficar esse tempo (s) dentro dele, livre e com a condição cumprida.
+   */
+  trigger: { center: readonly [number, number]; radius: number; delay?: number };
+  requires?: Requirement;
+  steps: readonly CinematicStep[];
+  /**
+   * Onde a Aysha fica quando o controle volta: posição (XZ) e para onde olha.
+   * Deve coincidir com o último enquadramento, para a volta não ter emenda.
+   * Uma cena que termina o jogo (`finale`) não devolve o controle, e não tem.
+   */
+  release?: { position: readonly [number, number]; lookAt: GroundPoint };
+  /** Marcos registrados no fim. */
+  setsFlags?: readonly StoryFlag[];
+}
+
+// ── Escolhas ─────────────────────────────────────────────────────────────
+// Uma decisão da Aysha que o jogo guarda e que muda o que vem depois. Quem a
+// pede é um passo de cena; quem a lê é qualquer `Requirement` (`choices`).
+
+export interface ChoiceOption {
+  /** O que fica guardado no estado do jogo. */
+  value: string;
+  /** O que o jogador lê. */
+  label: string;
+}
+
+export interface Choice {
+  /** Uma linha curta acima das opções (opcional: às vezes o silêncio basta). */
+  prompt?: string;
+  options: readonly ChoiceOption[];
+}

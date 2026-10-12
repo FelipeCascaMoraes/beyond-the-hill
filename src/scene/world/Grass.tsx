@@ -21,6 +21,12 @@ interface GrassProps {
    * atrás da Aysha a cada instante.
    */
   cull?: boolean;
+  /** Cor do pé e da ponta das folhas (padrão: a grama do Além). */
+  baseColor?: string;
+  tipColor?: string;
+  /** Cor das pontas secas (manchas de palha) e cor que a grama assume ao longe. */
+  dryColor?: string;
+  farColor?: string;
 }
 
 const NO_CLEARINGS: readonly GrassClearing[] = [];
@@ -29,7 +35,19 @@ const NO_CLEARINGS: readonly GrassClearing[] = [];
 const GRASS_VERTICAL_SLACK = 25;
 
 /** Campo de grama: todas as folhas em um único draw call. */
-export function Grass({ count, radius, centerX = 0, centerZ = 0, seed = 7, clearings = NO_CLEARINGS, cull = false }: GrassProps) {
+export function Grass({
+  count,
+  radius,
+  centerX = 0,
+  centerZ = 0,
+  seed = 7,
+  clearings = NO_CLEARINGS,
+  cull = false,
+  baseColor = atmosphere.grassBaseColor,
+  tipColor = atmosphere.grassTipColor,
+  dryColor = atmosphere.grassDryColor,
+  farColor = atmosphere.grassFarColor,
+}: GrassProps) {
   const materialRef = useRef<ShaderMaterial>(null);
 
   const geometry = useMemo(() => {
@@ -54,13 +72,15 @@ export function Grass({ count, radius, centerX = 0, centerZ = 0, seed = 7, clear
         {
           uTime: { value: 0 },
           uWindDirection: { value: new Vector2(0.8, 0.6).normalize() },
-          uBaseColor: { value: new Color(atmosphere.grassBaseColor) },
-          uTipColor: { value: new Color(atmosphere.grassTipColor) },
+          uBaseColor: { value: new Color(baseColor) },
+          uTipColor: { value: new Color(tipColor) },
+          uDryColor: { value: new Color(dryColor) },
+          uFarColor: { value: new Color(farColor) },
           uSunColor: { value: new Color(atmosphere.sunColor) },
           uSunDirection: { value: new Vector3(...atmosphere.sunDirection).normalize() },
         },
       ]),
-    [],
+    [baseColor, tipColor, dryColor, farColor],
   );
 
   useFrame(({ clock }) => {

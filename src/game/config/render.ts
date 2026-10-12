@@ -47,6 +47,10 @@ export const atmosphere = {
   treeColor: "#26261c",
   grassBaseColor: "#232c17",
   grassTipColor: "#8c9460",
+  /** Pontas secas, em manchas: palha de fim de verão. */
+  grassDryColor: "#b39f62",
+  /** A cor que a grama assume ao longe: a mesma do chão iluminado, para se fundir nele. */
+  grassFarColor: "#4f4d28",
   moteColor: "#ffe6b8",
 } as const;
 
@@ -75,6 +79,9 @@ export const worldMoods = {
   idle: { horizonColor: atmosphere.horizonColor, zenithColor: atmosphere.zenithColor, fogDensity: atmosphere.fogDensity },
   calling: { horizonColor: "#e3c79e", zenithColor: "#405a79", fogDensity: 0.0019 },
   summit: { horizonColor: "#f4dfb8", zenithColor: "#4d7099", fogDensity: 0.0009 },
+  // Dentro da concha: o ar dourado e um pouco mais espesso, como poeira ao sol.
+  // É o único lugar do Além em que a neblina volta — e volta morna.
+  refuge: { horizonColor: "#f3cf9c", zenithColor: "#5d6f8e", fogDensity: 0.0014 },
 } as const satisfies Record<string, AirMood>;
 
 export type WorldMoodId = "idle" | "calling";
@@ -95,15 +102,18 @@ interface LightMood {
  * é o mesmo campo que esquenta quando a memória é boa e perde a cor quando não é.
  */
 export const lightMoods = {
-  idle: { sun: 1.8, sky: 1.9, sunColor: atmosphere.sunColor, skyColor: "#d3d4d0", groundColor: "#4a4430" },
+  idle: { sun: 1.8, sky: 2.4, sunColor: atmosphere.sunColor, skyColor: "#d3d4d0", groundColor: "#86714c" },
   // Contraluz mais forte e mais quente: o sol está atrás da colina, e agora é
   // para lá que se vai.
-  calling: { sun: 2.3, sky: 1.6, sunColor: "#ffc489", skyColor: "#ddd2ba", groundColor: "#514526" },
+  calling: { sun: 2.3, sky: 2.1, sunColor: "#ffc489", skyColor: "#ddd2ba", groundColor: "#8a7046" },
   // No alto, sem neblina no meio, a luz bate inteira.
-  summit: { sun: 3.2, sky: 2.1, sunColor: "#ffd9a4", skyColor: "#f0e3c8", groundColor: "#6a5a34" },
+  summit: { sun: 3.2, sky: 2.5, sunColor: "#ffd9a4", skyColor: "#f0e3c8", groundColor: "#94794a" },
+  // O refúgio: menos luz do que no cume, e muito mais quente. O sol entra
+  // baixo e dourado, e o chão devolve a cor para cima — nada de sombra fria.
+  refuge: { sun: 2.5, sky: 2.2, sunColor: "#ffbf78", skyColor: "#f6d9aa", groundColor: "#94703a" },
   warm: { sun: 2.7, sky: 1.5, sunColor: "#ffc98a", skyColor: "#e7d4ad", groundColor: "#5c4a26" },
   cold: { sun: 0.6, sky: 0.9, sunColor: "#a6b6c6", skyColor: "#8d9aab", groundColor: "#282d34" },
-} as const satisfies Record<WorldMoodId | "summit" | MemoryTone, LightMood>;
+} as const satisfies Record<WorldMoodId | "summit" | "refuge" | MemoryTone, LightMood>;
 
 export type LightMoodId = keyof typeof lightMoods;
 

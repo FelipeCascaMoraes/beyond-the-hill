@@ -52,8 +52,31 @@ test("o campo perde também a máquina, e sobra uma só no jogo inteiro", () => 
 test("nenhuma máquina na encosta: a subida é a única zona sem ameaça", () => {
   const allMachines: MachineDefinition[] = Object.values(machines);
   assert.equal(allMachines.filter((machine) => machine.zone === "hillside").length, 0);
-  const allNpcs: NpcDefinition[] = Object.values(npcs);
-  assert.equal(allNpcs.filter((npc) => npc.zone === "hillside").length, 0, "nem ninguém para conversar");
+
+  // Na encosta só há gente no refúgio, e só depois da subida: os pais, que
+  // aparecem no reencontro e ficam, e os dois, que voltam só para o fim.
+  // A subida em si continua sem ninguém para conversar.
+  const onHill = (Object.keys(npcs) as (keyof typeof npcs)[]).filter((id) => npcs[id].zone === "hillside");
+  assert.deepEqual(onHill.sort(), ["cassandra-refuge", "father", "mother", "victor-refuge"]);
+  const climbing = context(["they-lied", "hill-reached", "hill-climbed", "refuge-seen"]);
+  for (const id of onHill) {
+    assert.equal(isPresent(npcs[id] as NpcDefinition, climbing), false, `${id} não espera na trilha`);
+  }
+
+  const reunited = context([...climbing.flags, "parents-found", "remembered"]);
+  const confronted = context([...reunited.flags, "guides-return"]);
+  const ended = context([...confronted.flags, "guides-gone"]);
+  for (const id of ["father", "mother"] as const) {
+    assert.equal(isPresent(npcs[id], reunited), true, `${id} aparece no reencontro`);
+    assert.equal(isPresent(npcs[id], ended), true, `${id} fica até o fim, nos dois finais`);
+  }
+  for (const id of ["cassandra-refuge", "victor-refuge"] as const) {
+    const npc: NpcDefinition = npcs[id];
+    assert.equal(isPresent(npc, reunited), false, `${id} ainda não voltou`);
+    assert.equal(isPresent(npc, confronted), true, `${id} está na beira do refúgio`);
+    assert.equal(isPresent(npc, ended), false, `${id} foi embora de vez`);
+    assert.equal(npc.exit, "fade", `${id} vai embora à vista, não num corte`);
+  }
 });
 
 test("as últimas conversas com os dois cabem antes de eles sumirem", () => {

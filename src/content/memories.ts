@@ -12,7 +12,7 @@ import type { Memory } from "./types";
  * `MemoryId` do próprio objeto seria circular. O `satisfies` cobra que a lista
  * e os dados continuem iguais.
  */
-export const memoryIds = ["childhood-ride", "parents-night", "the-names", "the-two", "after"] as const;
+export const memoryIds = ["childhood-ride", "parents-night", "the-names", "the-two", "after", "whole"] as const;
 export type MemoryId = (typeof memoryIds)[number];
 
 export const memories = {
@@ -144,5 +144,57 @@ export const memories = {
       { text: "E então: grama alta, luz de fim de tarde, e uma colina.", duration: 3.0 },
     ],
     setsFlags: ["own-death"],
+  },
+
+  // A última: a vida inteira de uma vez, no refúgio, com o pai e a mãe ao
+  // lado. Não traz nada de novo — cada pedaço já foi lembrado sozinho. O que
+  // muda é que agora eles vêm em ordem, um puxando o outro, e cabem numa
+  // respiração só. Por isso os fragmentos são curtos: é reconhecimento, não
+  // descoberta.
+  //
+  //   infância, pai, mãe (morna) → a noite, a busca, os dois, a vingança (fria)
+  //   → os anos depois (morna) → a morte (fria) → a chegada ao Além (morna)
+  //
+  // Nada de violência: a noite é uma voz lá embaixo, a vingança é uma espera.
+  // Só pode ser aberta pela cena do reencontro (content/cinematics.ts), e ao
+  // terminar a tela diz, sozinha: "Eu me lembro."
+  // ~46 s de fragmentos.
+  "whole": {
+    title: "Inteira",
+    description: "A vida inteira, em ordem, do campo dourado à colina: agora com os dois do lado.",
+    unlock: { flags: ["parents-found"], memories: ["after"] },
+    trigger: { type: "scene" },
+    tone: "warm",
+    autoplay: true,
+    fragments: [
+      // Infância, pai, mãe.
+      { text: "Uma menina num campo dourado, com a grama batendo no ombro.", duration: 2.4 },
+      { kind: "voice", text: "Segura firme. Eu estou aqui.", duration: 2.0 },
+      { text: "As mãos grandes do pai na rédea. As pequenas na crina.", duration: 2.3 },
+      { text: "Uma canção baixinha na cozinha. Cheiro de pão.", duration: 2.2 },
+      { kind: "voice", text: "Amanhã ele volta pra janela.", duration: 2.0 },
+      // A noite em que eles foram tirados dela.
+      { tone: "cold", text: "Uma noite. Vozes lá embaixo que ninguém conhecia.", duration: 2.4 },
+      { kind: "voice", soft: true, text: "Mãe? Pai?", duration: 1.8 },
+      { text: "De manhã, a mesa posta. E ninguém para sentar.", duration: 2.5 },
+      // A busca, e os dois.
+      { text: "Anos batendo em portas. Nomes riscados num papel.", duration: 2.4 },
+      { kind: "voice", text: "Eram dois. Um homem e uma mulher.", duration: 2.1 },
+      { text: "Um chapéu de aba larga. Um casaco até os pés. Victor. Cassandra.", duration: 2.9 },
+      // A vingança: uma espera, e o que sobrou dela.
+      { text: "Ela esperou a noite. E a noite veio.", duration: 2.3 },
+      { text: "Depois, as mãos pararam de tremer. Foi só o que mudou.", duration: 2.6 },
+      // Os anos que ela ainda teve.
+      { tone: "warm", text: "Anos mornos. Um cavalo velho, uma janela aberta.", duration: 2.4 },
+      { kind: "voice", soft: true, text: "Hoje não. Hoje eu fico.", duration: 2.0 },
+      { text: "Ela envelheceu olhando colinas que não eram esta.", duration: 2.4 },
+      // A morte.
+      { tone: "cold", text: "A respiração curta. A mão procurando uma crina.", duration: 2.5 },
+      { text: "O teto some.", duration: 1.8 },
+      // O Além.
+      { tone: "warm", text: "Grama alta, luz de fim de tarde. Dois rostos sorrindo demais.", duration: 2.7 },
+      { text: "E uma colina. Desta vez, subida até o fim.", duration: 2.8 },
+    ],
+    setsFlags: ["remembered"],
   },
 } as const satisfies Record<MemoryId, Memory>;

@@ -9,6 +9,7 @@ import { isPresent } from "../story/presence.ts";
 import { meetsRequirement, type StoryContext } from "../story/requirements.ts";
 import { HOUSE, houseWallBoxes } from "../world/house.ts";
 import { LABYRINTH, labyrinthWallBoxes } from "../world/labyrinth.ts";
+import { REFUGE, refugeObstacles, refugePaceAt } from "../world/refuge.ts";
 import { terrainHeight } from "../world/terrain.ts";
 import { lookAngles, type CircleObstacle, type PlayerEnvironment, type SpawnPose } from "./playerController.ts";
 
@@ -53,11 +54,15 @@ export function getPlayerEnvironment(zoneId: ZoneId, context: StoryContext): Pla
     .filter((poi) => poi.zone === zoneId && stillBlocks(poi, context))
     .map((poi) => ({ x: poi.position[0], z: poi.position[1], radius: poi.obstacleRadius ?? 0 }));
 
+  // O refúgio: a cerca viva e a árvore barram o passo, e o chão pede calma.
+  const inRefuge = REFUGE.zone === zoneId;
+
   return {
     heightAt: terrainHeight,
     bounds: zones[zoneId].bounds.map(({ center, radius }) => ({ centerX: center[0], centerZ: center[1], radius })),
-    obstacles: [...npcObstacles, ...poiObstacles],
+    obstacles: [...npcObstacles, ...poiObstacles, ...(inRefuge ? refugeObstacles() : [])],
     walls: zoneWalls(zoneId),
+    ...(inRefuge ? { paceAt: refugePaceAt } : {}),
   };
 }
 

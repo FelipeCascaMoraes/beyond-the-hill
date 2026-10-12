@@ -7,6 +7,11 @@ export interface Viewer {
   position: Point3;
   /** Direção do olhar (normalizada). */
   direction: Point3;
+  /**
+   * De onde se mede o alcance, quando não é dos olhos: em 3ª pessoa a mira sai
+   * da câmera, mas o que alcança as coisas é a Aysha, metros à frente dela.
+   */
+  reachFrom?: Point3;
 }
 
 /**
@@ -37,7 +42,13 @@ export function findFocus(
     const toY = position.y - viewer.position.y;
     const toZ = position.z - viewer.position.z;
     const distanceSq = toX * toX + toY * toY + toZ * toZ;
-    if (distanceSq > reach * reach) continue;
+
+    const hand = viewer.reachFrom ?? viewer.position;
+    const handX = position.x - hand.x;
+    const handY = position.y - hand.y;
+    const handZ = position.z - hand.z;
+    const handSq = handX * handX + handY * handY + handZ * handZ;
+    if (handSq > reach * reach) continue;
 
     let score: number;
     if ((definition.mode ?? INTERACTION_DEFAULTS.mode) === "look") {
@@ -48,7 +59,7 @@ export function findFocus(
       if (distanceSq - along * along > targetRadius * targetRadius) continue;
       score = along;
     } else {
-      score = Math.sqrt(distanceSq) + PROXIMITY_PENALTY;
+      score = Math.sqrt(handSq) + PROXIMITY_PENALTY;
     }
 
     if (score < bestScore) {

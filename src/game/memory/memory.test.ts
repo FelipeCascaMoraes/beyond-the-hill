@@ -173,8 +173,8 @@ test("quinta memória: a vida depois e a morte, terminando na primeira imagem do
   assert.ok(/colina/.test(last.text), `último fragmento: "${last.text}"`);
 });
 
-test("as cinco lembranças vêm em ordem: cada uma depende da anterior", () => {
-  assert.deepEqual([...memoryIds], ["childhood-ride", "parents-night", "the-names", "the-two", "after"]);
+test("as seis lembranças vêm em ordem: cada uma depende da anterior", () => {
+  assert.deepEqual([...memoryIds], ["childhood-ride", "parents-night", "the-names", "the-two", "after", "whole"]);
 
   // Pular uma lembrança não abre a seguinte: nem com todos os marcos da história.
   for (let index = 1; index < memoryIds.length; index++) {
@@ -185,10 +185,43 @@ test("as cinco lembranças vêm em ordem: cada uma depende da anterior", () => {
   }
 
   // Nenhuma lembrança dura mais que meio minuto: são fragmentos, não vídeos.
+  // A última é a exceção, e só ela: é a vida inteira passando de uma vez.
   for (const id of memoryIds) {
     const seconds = totalDuration(memories[id]);
-    assert.ok(seconds <= 30, `"${id}" dura ${seconds}s`);
+    const limit = id === "whole" ? 50 : 30;
+    assert.ok(seconds <= limit, `"${id}" dura ${seconds}s`);
   }
+});
+
+test("a lembrança inteira: a vida em ordem, em pedaços curtos, só pela cena", () => {
+  const memory: Memory = memories.whole;
+  assert.deepEqual(validateMemory(memory), []);
+  assert.equal(memory.trigger.type, "scene", "nem sozinha, nem por um objeto: só no reencontro");
+
+  // Morna (infância, pai, mãe) → fria (a noite, a busca, os dois, a vingança)
+  // → morna (os anos depois) → fria (a morte) → morna (o Além).
+  const sequence = memory.fragments.map((_, index) => fragmentTone(memory, index));
+  const turns = sequence.filter((tone, index) => index === 0 || tone !== sequence[index - 1]);
+  assert.deepEqual(turns, ["warm", "cold", "warm", "cold", "warm"]);
+
+  // Pedaços, não cenas: nenhum fragmento se demora, e nenhum é um parágrafo.
+  for (const fragment of memory.fragments) {
+    assert.ok((fragment.duration ?? 2.5) <= 3, `"${fragment.text}" se demora demais`);
+    assert.ok(fragment.text.length <= 70, `"${fragment.text}" é longo demais para um pedaço`);
+  }
+
+  // Tudo que a Aysha lembrou pelo caminho está aqui, em ordem.
+  const text = memory.fragments.map((fragment) => fragment.text).join(" ");
+  const order = ["crina", "canção", "Vozes", "Nomes", "Victor. Cassandra", "esperou a noite", "cavalo velho", "respiração", "colina"];
+  let from = 0;
+  for (const word of order) {
+    const at = text.indexOf(word, from);
+    assert.ok(at >= 0, `falta "${word}" (ou está fora de ordem)`);
+    from = at;
+  }
+
+  // Sem violência na tela: nada de sangue, arma ou golpe.
+  assert.doesNotMatch(text, /sangue|faca|arma|tiro|golpe|mat(ou|ar)/i);
 });
 
 test("depois da quinta lembrança vem o entendimento — e não o final", () => {

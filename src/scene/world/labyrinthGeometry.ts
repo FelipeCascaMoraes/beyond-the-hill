@@ -10,9 +10,11 @@ import { createRandom } from "@/game/world/noise";
 // aqui elas só ganham altura, uma coroa de pedra no topo e a cor gasta do lugar.
 
 /** Pedra escura e úmida, com variação por bloco. */
-const STONE = "#5d5a53";
+const STONE = "#857d6e";
+/** O quanto a cor escurece no pé da parede e clareia no alto. */
+const WEATHER = { foot: 0.6, top: 1.1 } as const;
 /** A coroa do topo, mais clara: dá o recorte contra o céu. */
-const CAP = "#736d62";
+const CAP = "#978e7c";
 /** Altura da coroa (m) e o quanto ela avança para os lados. */
 const CAP_HEIGHT = 0.12;
 const CAP_OVERHANG = 0.06;
@@ -20,10 +22,21 @@ const CAP_OVERHANG = 0.06;
 function painted(geometry: BufferGeometry, hex: string, shade: number): BufferGeometry {
   const flat = geometry.index ? geometry.toNonIndexed() : geometry;
   if (flat !== geometry) geometry.dispose();
-  const color = new Color(hex).multiplyScalar(shade);
-  const count = flat.getAttribute("position").count;
+  const base = new Color(hex).multiplyScalar(shade);
+  const color = new Color();
+  const position = flat.getAttribute("position");
+  const count = position.count;
   const colors = new Float32Array(count * 3);
-  for (let i = 0; i < count; i++) color.toArray(colors, i * 3);
+  // Mais escura e úmida no pé, mais clara em cima: a pedra ganha massa, e a
+  // muralha deixa de ser um recorte preto contra o campo.
+  flat.computeBoundingBox();
+  const { min, max } = flat.boundingBox!;
+  const span = Math.max(max.y - min.y, 1e-3);
+  for (let i = 0; i < count; i++) {
+    const up = (position.getY(i) - min.y) / span;
+    color.copy(base).multiplyScalar(WEATHER.foot + (WEATHER.top - WEATHER.foot) * up);
+    color.toArray(colors, i * 3);
+  }
   flat.setAttribute("color", new BufferAttribute(colors, 3));
   // Só posição, normal e cor: as partes precisam dos mesmos atributos para unir.
   flat.deleteAttribute("uv");

@@ -1,4 +1,4 @@
-import { dialogues, type DialogueId, type MemoryId, type StoryFlag, type ZoneId } from "@/content";
+import { cinematics, dialogues, type CinematicId, type DialogueId, type MemoryId, type StoryFlag, type ZoneId } from "@/content";
 import { inputSnapshot } from "@/game/input/input";
 import { selectCanControl, useGameStore } from "@/game/state/gameStore";
 import { setMachinesPaused } from "./devFlags";
@@ -21,6 +21,8 @@ interface Checkpoint {
   memories: readonly MemoryId[];
   /** Conversas dadas como vistas, para os momentos não se repetirem. */
   dialogues: readonly DialogueId[];
+  /** Cenas dadas como vistas, para não tocarem de novo. */
+  cinematics?: readonly CinematicId[];
 }
 
 const BEATS_INICIAIS: readonly DialogueId[] = ["arrival-meeting", "arrival-encourage", "arrival-hill-familiar"];
@@ -121,6 +123,86 @@ const etapas = {
       "guides-again",
     ],
   },
+  refugio: {
+    descricao: "no alto, a concha já vista: descer até o patamar começa o reencontro",
+    zone: "hillside",
+    flags: [
+      "met-guides",
+      "hill-familiar",
+      "first-memory",
+      "found-drawing",
+      "machine-seen",
+      "parents-lost",
+      "hunt-began",
+      "saw-them-again",
+      "guides-known",
+      "own-death",
+      "they-lied",
+      "hill-reached",
+      "hill-climbed",
+      "refuge-seen",
+    ],
+    memories: ["childhood-ride", "parents-night", "the-names", "the-two", "after"],
+    dialogues: [
+      ...BEATS_INICIAIS,
+      "machine-arrives",
+      "house-approach",
+      "poi-house-drawing",
+      "labyrinth-arrive",
+      "guides-again",
+      "guides-lied",
+      "field-empty",
+      "hillside-arrive",
+      "hillside-valley",
+      "hillside-climb",
+      "hillside-halfway",
+      "hillside-summit",
+      "hillside-hollow",
+    ],
+  },
+  fim: {
+    descricao: "tudo lembrado, os pais no refúgio: alguns segundos em paz ali e os dois aparecem para o fim",
+    zone: "hillside",
+    flags: [
+      "met-guides",
+      "hill-familiar",
+      "first-memory",
+      "found-drawing",
+      "machine-seen",
+      "parents-lost",
+      "hunt-began",
+      "saw-them-again",
+      "guides-known",
+      "own-death",
+      "they-lied",
+      "hill-reached",
+      "hill-climbed",
+      "refuge-seen",
+      "parents-found",
+      "remembered",
+    ],
+    memories: ["childhood-ride", "parents-night", "the-names", "the-two", "after", "whole"],
+    dialogues: [
+      ...BEATS_INICIAIS,
+      "machine-arrives",
+      "house-approach",
+      "poi-house-drawing",
+      "labyrinth-arrive",
+      "guides-again",
+      "guides-lied",
+      "field-empty",
+      "hillside-arrive",
+      "hillside-valley",
+      "hillside-climb",
+      "hillside-halfway",
+      "hillside-summit",
+      "hillside-hollow",
+      "reunion-see",
+      "reunion-hold",
+      "refuge-after",
+    ],
+    cinematics: ["reunion"],
+  },
 } as const satisfies Record<string, Checkpoint>;
 
 type EtapaId = keyof typeof etapas;
@@ -141,6 +223,8 @@ const lugares = {
   subida: { zone: "hillside", x: -12, z: -560, olharX: 14, olharZ: -668 },
   cume: { zone: "hillside", x: 38, z: -710, olharX: 44, olharZ: -760 },
   concha: { zone: "hillside", x: 45, z: -786, olharX: 45, olharZ: -800 },
+  refugio: { zone: "hillside", x: 44, z: -778, olharX: 44.8, olharZ: -813 },
+  patamar: { zone: "hillside", x: 44.5, z: -804.4, olharX: 44.6, olharZ: -809.3 },
   camara: { zone: "labyrinth", x: 2, z: -80.6, olharX: 2, olharZ: -78 },
   anel: { zone: "labyrinth", x: 2, z: -60.5, olharX: -15, olharZ: -60.5 },
 } as const;
@@ -172,6 +256,7 @@ export function installDevTools(): void {
           "  bth.paz()            liga/desliga as máquinas (volta ligado com bth.paz(false))",
           "  bth.zona(\"labyrinth\") troca de zona",
           "  bth.lembranca(\"after\") toca uma lembrança agora",
+          "  bth.cena(\"reunion\")   começa uma cena agora (sem esperar o gatilho)",
           "  bth.estado()         mostra marcos, lembranças, ameaça e o que trava o movimento",
           "  bth.porqueNaoAnda()  diz por que a Aysha não sai do lugar",
           "  bth.destravar()      solta o movimento na marra",
@@ -179,6 +264,8 @@ export function installDevTools(): void {
           "Dica: bth.etapa(\"labirinto\") e depois bth.ir(\"porteira\") para testar a travessia.",
           "Dica: bth.etapa(\"colina\") e bth.ir(\"encosta\") para a subida inteira;",
           "      bth.ir(\"cume\") ou bth.ir(\"concha\") para cair direto lá em cima.",
+          "Dica: bth.etapa(\"refugio\") e bth.ir(\"refugio\"), depois alguns passos adiante.",
+          "Dica: bth.etapa(\"fim\") e bth.ir(\"patamar\"), e espere uns segundos parada (ou bth.cena(\"confrontation\")).",
         ].join("\n"),
       );
     },
@@ -188,12 +275,17 @@ export function installDevTools(): void {
       const etapa: Checkpoint = etapas[id];
       if (!etapa) return console.warn(`Etapa desconhecida. Use: ${Object.keys(etapas).join(", ")}`);
       useGameStore.setState({
+        phase: "playing",
         zone: etapa.zone,
         flags: [...etapa.flags],
         recoveredMemories: [...etapa.memories],
         seenDialogues: [...etapa.dialogues],
         activeDialogue: null,
         activeMemory: null,
+        activeCinematic: null,
+        seenCinematics: [...(etapa.cinematics ?? [])],
+        choices: {},
+        activeChoice: null,
         captured: false,
         traveling: null,
         threat: "calm",
@@ -235,6 +327,14 @@ export function installDevTools(): void {
       useGameStore.setState({ activeMemory: { id, fragment: 0 }, activeDialogue: null, interactionFocus: null });
     },
 
+    /** Começa uma cena agora, mesmo longe do gatilho e já vista. */
+    cena(id: CinematicId) {
+      if (!cinematics[id]) return console.warn(`Cena desconhecida. Use: ${Object.keys(cinematics).join(", ")}`);
+      useGameStore.setState({ activeCinematic: null });
+      useGameStore.getState().startCinematic(id);
+      return undefined;
+    },
+
     estado() {
       const state = useGameStore.getState();
       const { zone, flags, recoveredMemories, seenDialogues, threat, captured, traveling } = state;
@@ -259,6 +359,8 @@ export function installDevTools(): void {
       if (state.captured) motivos.push("uma máquina está com ela (apagão da captura)");
       if (state.traveling) motivos.push(`atravessando para "${state.traveling}"`);
       if (state.activeMemory) motivos.push(`lembrança aberta: "${state.activeMemory.id}"`);
+      if (state.activeChoice) motivos.push(`esperando uma escolha: "${state.activeChoice}"`);
+      if (state.activeCinematic) motivos.push(`cena em andamento: "${state.activeCinematic.id}" (passo ${state.activeCinematic.step})`);
       if (state.activeDialogue) {
         const trava = dialogues[state.activeDialogue.id].blocksMovement !== false;
         motivos.push(`diálogo aberto: "${state.activeDialogue.id}" (${trava ? "trava o movimento — aperte E" : "não trava"})`);
@@ -278,13 +380,15 @@ export function installDevTools(): void {
       console.log("pode andar?", selectCanControl(state));
     },
 
-    /** Solta o movimento na marra: fecha diálogo, lembrança, apagão e travessia. */
+    /** Solta o movimento na marra: fecha diálogo, lembrança, cena, apagão e travessia. */
     destravar() {
       useGameStore.setState({
         controlEnabled: true,
         captured: false,
         traveling: null,
         activeMemory: null,
+        activeCinematic: null,
+        activeChoice: null,
         activeDialogue: null,
         threat: "calm",
       });

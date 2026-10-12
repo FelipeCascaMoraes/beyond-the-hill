@@ -11,6 +11,7 @@ export const grassVertexShader = /* glsl */ `
   varying float vHeight;
   varying float vRandom;
   varying vec3 vWorldPosition;
+  varying vec2 vBase;
 
   #include <common>
   #include <fog_pars_vertex>
@@ -40,6 +41,7 @@ export const grassVertexShader = /* glsl */ `
     vHeight = t;
     vRandom = random;
     vWorldPosition = world;
+    vBase = aOffset.xz;
 
     vec4 mvPosition = viewMatrix * vec4(world, 1.0);
     gl_Position = projectionMatrix * mvPosition;
@@ -53,17 +55,31 @@ export const grassFragmentShader = /* glsl */ `
   uniform vec3 uTipColor;
   uniform vec3 uSunColor;
   uniform vec3 uSunDirection;
+  uniform vec3 uDryColor;
+  uniform vec3 uFarColor;
 
   varying float vHeight;
   varying float vRandom;
   varying vec3 vWorldPosition;
+  varying vec2 vBase;
 
   #include <common>
   #include <fog_pars_fragment>
 
+  // Ao longe a folha vira ruído: a grama assume a cor do chão entre estas
+  // distâncias (m), e a mancha some dentro do terreno em vez de borrar o morro.
+  const float FAR_FROM = 28.0;
+  const float FAR_TO = 75.0;
+
   void main() {
-    vec3 color = mix(uBaseColor, uTipColor, smoothstep(0.0, 1.0, vHeight));
-    color *= 0.75 + vRandom * 0.4;
+    // Tufos secos em manchas largas: campo de fim de verão, não gramado. Duas
+    // ondas cruzadas bastam — é uma variação de pintura, não de simulação.
+    float patches = sin(vBase.x * 0.045 + sin(vBase.y * 0.031) * 2.0) * sin(vBase.y * 0.052 - vBase.x * 0.012);
+    float dry = smoothstep(0.15, 0.75, patches * 0.5 + 0.5) * (0.55 + 0.45 * vRandom);
+    vec3 tip = mix(uTipColor, uDryColor, dry * 0.7);
+
+    vec3 color = mix(uBaseColor, tip, smoothstep(0.0, 1.0, vHeight));
+    color *= 0.8 + vRandom * 0.3;
 
     // Contraluz: pontas acendem quando o olhar vai na direção do sol.
     vec3 viewDirection = normalize(vWorldPosition - cameraPosition);
@@ -72,6 +88,9 @@ export const grassFragmentShader = /* glsl */ `
 
     // Oclusão na base.
     color *= mix(0.35, 1.0, vHeight);
+
+    float far = smoothstep(FAR_FROM, FAR_TO, distance(vWorldPosition, cameraPosition));
+    color = mix(color, uFarColor, far * 0.85);
 
     gl_FragColor = vec4(color, 1.0);
 

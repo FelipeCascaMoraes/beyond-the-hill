@@ -1,17 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, Geist } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const geistSans = Geist({
+// Fontes servidas do próprio projeto: next/font/google quebra o build no Turbopack
+// quando o Google responde com URLs do tipo fonts.gstatic.com/l/font?kit=…
+const geistSans = localFont({
   variable: "--font-geist-sans",
-  subsets: ["latin"],
+  src: "./fonts/Geist.woff2",
+  weight: "100 900",
 });
 
-const cormorant = Cormorant_Garamond({
+const cormorant = localFont({
   variable: "--font-cormorant",
-  subsets: ["latin"],
-  weight: ["300", "400"],
-  style: ["normal", "italic"],
+  src: [
+    { path: "./fonts/CormorantGaramond.woff2", weight: "300 700", style: "normal" },
+    { path: "./fonts/CormorantGaramond-Italic.woff2", weight: "300 700", style: "italic" },
+  ],
 });
 
 export const metadata: Metadata = {
@@ -21,11 +25,19 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#050505",
+  // O navegador já pinta a página de escuro antes de o CSS chegar.
+  colorScheme: "dark",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-BR" className={`${geistSans.variable} ${cormorant.variable} h-full antialiased`}>
+    // Fundo escrito no próprio HTML: nenhum instante de tela branca enquanto a
+    // folha de estilos carrega.
+    <html
+      lang="pt-BR"
+      style={{ backgroundColor: "#050505" }}
+      className={`${geistSans.variable} ${cormorant.variable} h-full antialiased`}
+    >
       <body className="h-full overflow-hidden">{children}</body>
     </html>
   );

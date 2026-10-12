@@ -1,9 +1,11 @@
 import { getQualitySettings } from "@/game/config/quality";
 import { hillsideGrassPatches, hillsideTrailClearings } from "@/game/world/hillside";
 import { ZonePointsOfInterest, poiGrassClearings } from "../poi/PointsOfInterest";
+import { ZoneNpcs } from "../actors/ZoneNpcs";
 import { Grass } from "../world/Grass";
 import { HillsideAmbience } from "../world/HillsideAmbience";
 import { Motes } from "../world/Motes";
+import { Refuge } from "../world/Refuge";
 
 // Referências estáveis: grama e trilha são geradas uma única vez.
 const CLEARINGS = [...poiGrassClearings("hillside"), ...hillsideTrailClearings()];
@@ -26,7 +28,8 @@ const PATCH_SHARE = 0.24;
 
 /**
  * A encosta: meio quilômetro de subida, do vale até a concha atrás do cume.
- * Nenhuma máquina, nenhum NPC — é a única zona do jogo sem nada que ameace.
+ * Nenhuma máquina — é a única zona do jogo sem nada que ameace. No fim, atrás
+ * do cume, o refúgio: onde os pais esperam (ver world/Refuge.tsx).
  * O que muda aqui muda com a altura: a luz, o ar, o vento e a interface (ver
  * scene/world/mood.ts, audio/hillsideAudio.ts e ui/GameUI.tsx).
  */
@@ -49,6 +52,8 @@ export function HillsideZone() {
       <Motes count={Math.round(quality.motes * 0.7)} />
       <HillsideAmbience />
       <ZonePointsOfInterest zone="hillside" />
+      <Refuge />
+      <ZoneNpcs zone="hillside" />
     </>
   );
 }

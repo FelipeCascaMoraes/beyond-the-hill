@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame } from "@react-three/fiber";
-import { AdditiveBlending, Color, ShaderMaterial } from "three";
+import { AdditiveBlending, Color, ShaderMaterial, Vector3 } from "three";
 import { playerConfig } from "@/game/config/player";
 import { atmosphere } from "@/game/config/render";
 import { motesFragmentShader, motesVertexShader } from "../shaders/motes";
@@ -29,6 +29,7 @@ export function Motes({ count, range = 30, height = 7, seed = 11 }: MotesProps) 
       uEyeHeight: { value: playerConfig.eyeHeight },
       uPixelRatio: { value: 1 },
       uColor: { value: new Color(atmosphere.moteColor) },
+      uSunDirection: { value: new Vector3(...atmosphere.sunDirection).normalize() },
     }),
     [height, range],
   );

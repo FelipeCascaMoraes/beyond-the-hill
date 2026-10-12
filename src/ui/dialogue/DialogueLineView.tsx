@@ -74,5 +74,5 @@ export function DialogueLineView({ line, isFinal, blocking, onAdvance }: Dialogu
 
 function SpeakerLabel({ id }: { id: CharacterId }) {
   const label = useCharacterLabel(id);
-  return <span className="block text-xs tracking-[0.25em] text-stone-400 uppercase">{label}</span>;
+  return <span className="block text-[0.7rem] tracking-[0.3em] text-amber-100/55 uppercase">{label}</span>;
 }

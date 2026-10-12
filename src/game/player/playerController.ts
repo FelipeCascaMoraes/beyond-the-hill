@@ -58,6 +58,11 @@ export interface PlayerEnvironment {
   bounds: readonly BoundsCircle[];
   obstacles?: readonly CircleObstacle[];
   walls?: readonly BoxObstacle[];
+  /**
+   * Fração do passo em cada ponto (padrão: 1). Um lugar pode pedir calma: no
+   * fundo da concha ninguém chega correndo.
+   */
+  paceAt?: (x: number, z: number) => number;
 }
 
 /** Círculo com mais folga para a posição (o "mais por dentro"); pode estar fora de todos. */
@@ -167,7 +172,9 @@ export function updatePlayer(
   }
   const sin = Math.sin(state.yaw);
   const cos = Math.cos(state.yaw);
-  const moveSpeed = (input.run ? config.runSpeed : config.walkSpeed) * climbFactor(state, environment, config, sin, cos, forward, strafe);
+  const pace = environment.paceAt?.(state.x, state.z) ?? 1;
+  const moveSpeed =
+    (input.run ? config.runSpeed : config.walkSpeed) * pace * climbFactor(state, environment, config, sin, cos, forward, strafe);
   const wishX = (-sin * forward + cos * strafe) * moveSpeed;
   const wishZ = (-cos * forward - sin * strafe) * moveSpeed;
 

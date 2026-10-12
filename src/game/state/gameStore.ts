@@ -1,10 +1,15 @@
 import { create } from "zustand";
 import {
+  cinematics,
+  isChoiceValue,
   dialogues,
   memories,
+  type Cinematic,
+  type CinematicId,
+  type CinematicStep,
   type CharacterId,
   type DialogueId,
-  type EndingChoice,
+  type ChoiceId,
   type MemoryId,
   type MemoryTone,
   type StoryFlag,
@@ -35,6 +40,12 @@ export interface ActiveMemory {
   fragment: number;
 }
 
+/** Cena em andamento e o passo em que está. */
+export interface ActiveCinematic {
+  id: CinematicId;
+  step: number;
+}
+
 /** Interativo sob a mira/perto do jogador, para o prompt "[ E ] ...". */
 export interface InteractionFocus {
   id: string;
@@ -58,6 +69,10 @@ interface GameState {
   activeMemory: ActiveMemory | null;
   /** Memórias já vividas até o fim. */
   recoveredMemories: readonly MemoryId[];
+  /** Cena em andamento: a câmera é dela, e o controle também. */
+  activeCinematic: ActiveCinematic | null;
+  /** Cenas que já começaram (cada uma acontece uma vez só). */
+  seenCinematics: readonly CinematicId[];
   /** O quanto as máquinas apertam agora: move a UI e o som, nada mais. */
   threat: MachineAlert;
   /** Uma máquina alcançou a Aysha: apagão, sem controle, até ela acordar. */
@@ -69,7 +84,10 @@ interface GameState {
    * controlador do jogador observa este número para recriar a pose.
    */
   spawnEpoch: number;
-  endingChoice: EndingChoice | null;
+  /** Decisões já tomadas pela Aysha, e o que ela escolheu em cada uma. */
+  choices: { readonly [Id in ChoiceId]?: string };
+  /** Decisão pedida agora, esperando resposta (trava tudo até vir). */
+  activeChoice: ChoiceId | null;
 }
 
 interface GameActions {
@@ -99,7 +117,21 @@ interface GameActions {
   travelTo: (zone: ZoneId) => void;
   /** Fim da travessia: a Aysha chega na nova zona. */
   completeTravel: () => void;
-  chooseEnding: (choice: EndingChoice) => void;
+  /**
+   * Começa uma cena (tira o controle; uma fala de fundo é interrompida).
+   * Recusa se já houver cena, lembrança, apagão ou travessia. Retorna se começou.
+   */
+  startCinematic: (id: CinematicId) => boolean;
+  /** Próximo passo; depois do último, encerra, registra os marcos e devolve o controle. */
+  advanceCinematic: () => void;
+  /** Registra marcos da história (usado pelos passos das cenas). */
+  addFlags: (flags: readonly StoryFlag[]) => void;
+  /** Pede uma decisão: tudo para até ela ser tomada. */
+  openChoice: (id: ChoiceId) => void;
+  /** Toma a decisão aberta. Um valor que não é opção dela é recusado. */
+  makeChoice: (value: string) => void;
+  /** O jogo terminou: a tela final assume. */
+  finishGame: () => void;
 }
 
 const initialState: GameState = {
@@ -113,11 +145,14 @@ const initialState: GameState = {
   flags: [],
   activeMemory: null,
   recoveredMemories: [],
+  activeCinematic: null,
+  seenCinematics: [],
   threat: "calm",
   captured: false,
   traveling: null,
   spawnEpoch: 0,
-  endingChoice: null,
+  choices: {},
+  activeChoice: null,
 };
 
 const addUnique = <T,>(list: readonly T[], ...items: readonly T[]): readonly T[] => {
@@ -215,7 +250,7 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
   captureByMachine: () => {
     const state = get();
     // Durante uma lembrança a máquina fica parada; nada de apagão sobre apagão.
-    if (state.captured || state.activeMemory) return;
+    if (state.captured || state.activeMemory || state.activeCinematic) return;
     set({
       captured: true,
       threat: "calm",
@@ -232,7 +267,7 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
 
   travelTo: (zone) => {
     const state = get();
-    if (state.traveling || state.captured || state.activeMemory) return;
+    if (state.traveling || state.captured || state.activeMemory || state.activeCinematic) return;
     set({ traveling: zone, threat: "calm", activeDialogue: null, interactionFocus: null });
   },
 
@@ -242,7 +277,43 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
       return { zone: state.traveling, traveling: null, spawnEpoch: state.spawnEpoch + 1 };
     }),
 
-  chooseEnding: (choice) => set({ endingChoice: choice, phase: "ending" }),
+  startCinematic: (id) => {
+    const state = get();
+    if (state.activeCinematic || state.activeMemory || state.captured || state.traveling) return false;
+    const seenDialogues = state.activeDialogue ? addUnique(state.seenDialogues, state.activeDialogue.id) : state.seenDialogues;
+    set({
+      activeCinematic: { id, step: 0 },
+      seenCinematics: addUnique(state.seenCinematics, id),
+      activeDialogue: null,
+      seenDialogues,
+      interactionFocus: null,
+      threat: "calm",
+    });
+    return true;
+  },
+
+  advanceCinematic: () =>
+    set(({ activeCinematic, flags }) => {
+      if (!activeCinematic) return {};
+      const cinematic: Cinematic = cinematics[activeCinematic.id];
+      if (activeCinematic.step < cinematic.steps.length - 1) {
+        return { activeCinematic: { ...activeCinematic, step: activeCinematic.step + 1 } };
+      }
+      return { activeCinematic: null, flags: addUnique(flags, ...(cinematic.setsFlags ?? [])) };
+    }),
+
+  addFlags: (added) => set(({ flags }) => ({ flags: addUnique(flags, ...added) })),
+
+  openChoice: (id) => set({ activeChoice: id, interactionFocus: null }),
+
+  makeChoice: (value) =>
+    set((state) => {
+      const id = state.activeChoice;
+      if (!id || !isChoiceValue(id, value)) return {};
+      return { activeChoice: null, choices: { ...state.choices, [id]: value } };
+    }),
+
+  finishGame: () => set({ phase: "ending", interactionFocus: null }),
 }));
 
 /** O diálogo aberto trava o movimento? (padrão: sim) */
@@ -251,14 +322,16 @@ export const selectDialogueBlocksMovement = (state: GameState): boolean =>
 
 /**
  * O jogador pode andar e olhar agora? Falso durante a abertura, no apagão de
- * uma captura, na travessia entre zonas, com memória aberta e durante
- * diálogos que travam o movimento.
+ * uma captura, na travessia entre zonas, com memória aberta, durante uma cena
+ * e durante diálogos que travam o movimento.
  */
 export const selectCanControl = (state: GameState): boolean =>
   state.controlEnabled &&
   !state.captured &&
   state.traveling === null &&
   state.activeMemory === null &&
+  state.activeCinematic === null &&
+  state.activeChoice === null &&
   !selectDialogueBlocksMovement(state);
 
 /** Estado de uma memória para o progresso atual (bloqueada/desbloqueada/recuperada). */
@@ -273,6 +346,13 @@ export const selectMemoryStatus =
  */
 export const selectActiveMemoryTone = (state: GameState): MemoryTone | null =>
   state.activeMemory ? fragmentTone(memories[state.activeMemory.id], state.activeMemory.fragment) : null;
+
+/** Passo da cena em andamento, ou `null` fora de uma. */
+export const selectCinematicStep = (state: GameState): CinematicStep | null => {
+  if (!state.activeCinematic) return null;
+  const cinematic: Cinematic = cinematics[state.activeCinematic.id];
+  return cinematic.steps[state.activeCinematic.step] ?? null;
+};
 
 /**
  * Pode iniciar uma interação? Sempre que pode controlar: durante uma fala de

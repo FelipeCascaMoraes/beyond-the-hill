@@ -6,6 +6,7 @@ import { useGameStore } from "@/game/state/gameStore";
 import { terrainHeight } from "@/game/world/terrain";
 import type { GrassClearing } from "../world/geometry";
 import { useInteractable } from "../interaction/useInteractable";
+import { GroundShadow } from "../world/GroundShadow";
 import { poiVisuals } from "./PoiVisuals";
 
 const poiIds = Object.keys(pointsOfInterest) as PointOfInterestId[];
@@ -42,9 +43,12 @@ function PointOfInterestView({ id }: { id: PointOfInterestId }) {
 
   const { Visual } = visual;
   return (
-    <group position={[x, y, z]} rotation-y={poi.rotation ?? 0}>
-      {cleared ? null : <Visual x={x} y={y} z={z} />}
-    </group>
+    <>
+      <group position={[x, y, z]} rotation-y={poi.rotation ?? 0}>
+        {cleared ? null : <Visual x={x} y={y} z={z} />}
+      </group>
+      {!cleared && visual.shadow && <GroundShadow x={x} z={z} radius={visual.shadow} opacity={0.35} />}
+    </>
   );
 }
 

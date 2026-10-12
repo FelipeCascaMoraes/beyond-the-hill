@@ -435,6 +435,123 @@ export const dialogues = {
   ]),
 
   "victor-idle": linear([{ speaker: "victor", text: "Estou de olho no horizonte. Pode ficar tranquila." }]),
+
+  // ── O refúgio ──────────────────────────────────────────────────────────
+  // O reencontro é contido: quase nada é dito, porque quase nada precisa. As
+  // duas primeiras falas pertencem à cena (content/cinematics.ts); as outras
+  // são o que os dois têm a dizer depois, quando ela quiser voltar a eles.
+
+  "reunion-see": linear([
+    { speaker: "narrator", text: "Debaixo da árvore pequena há duas pessoas. Um instante atrás, não havia." },
+    { speaker: "father", text: "Oi, pequena." },
+    { speaker: "aysha", text: "Pai." },
+    { speaker: "mother", text: "Olha só pra você." },
+  ]),
+
+  "reunion-hold": linear([
+    { speaker: "narrator", text: "Ninguém sabe quem anda primeiro. De repente, não sobra distância nenhuma." },
+    { speaker: "aysha", text: "Eu demorei." },
+    { speaker: "father", text: "A gente sabia esperar." },
+    { speaker: "mother", text: "Agora pode lembrar. Tudo. A gente segura." },
+  ]),
+
+  // Logo depois da lembrança inteira, quando o controle volta: sem travar.
+  "refuge-after": linear(
+    [
+      { speaker: "narrator", text: "O vento não entra aqui. A luz fica, parada, em cima dos três." },
+      { speaker: "aysha", text: "Eu me lembro de tudo. E continuo aqui." },
+    ],
+    { blocksMovement: false },
+  ),
+
+  "father-refuge": linear([
+    { speaker: "father", text: "Você subiu a colina inteira sozinha." },
+    { speaker: "aysha", text: "Você nunca me deixava passar da cerca." },
+    { speaker: "father", text: "Eu queria que você chegasse aqui o mais tarde possível. Não deu tão tarde quanto eu queria." },
+  ]),
+  "father-idle": linear([{ speaker: "father", text: "Fica. Não tem mais para onde ter pressa." }]),
+
+  "mother-refuge": linear([
+    { speaker: "mother", text: "O cavalinho ficou na janela?" },
+    { speaker: "aysha", text: "Ficou. Até o fim." },
+    { speaker: "mother", text: "Então ele esperou direitinho. Igual a gente." },
+  ]),
+  "mother-idle": linear([{ speaker: "mother", text: "Senta um pouco. Aqui ninguém tem pressa." }]),
+
+  // ── O fim ──────────────────────────────────────────────────────────────
+  // Cassandra e Victor na beira do refúgio. Eles sabem que ela lembra de tudo,
+  // e não vieram pedir perdão: vieram negociar a própria existência.
+  //
+  // O que a conversa precisa deixar claro, nesta ordem:
+  //   1. eles sabiam quem ela era, desde o primeiro instante;
+  //   2. tudo no campo foi feito para ela não lembrar;
+  //   3. eles têm medo de sumir — e é por isso que precisavam dela esquecida;
+  //   4. nenhum arrependimento de verdade.
+  //
+  // A regra do Além que faz tudo isso fechar, dita por eles: aqui só existe
+  // quem alguém ainda carrega. A Aysha é a última pessoa que lembra dos dois.
+  // Enquanto ela não lembrava de nada, não podia escolher esquecê-los.
+
+  "final-confrontation": linear([
+    { speaker: "narrator", text: "Na beira do patamar, onde a luz morna acaba, há duas pessoas. Um chapéu de aba larga. Um casaco até os pés." },
+    { speaker: "cassandra", text: "Aysha. Você subiu tudo, afinal." },
+    { speaker: "aysha", text: "Vocês sabiam quem eu era. Desde a primeira palavra no campo." },
+    { speaker: "victor", text: "Desde antes. Você ainda estava deitada na grama e a gente já sabia o seu nome." },
+    { speaker: "cassandra", text: "Cada \"descansa um pouco\". Cada \"a colina é longe\". Era para você não lembrar." },
+    { speaker: "victor", text: "E quando conversa não bastou, deixamos o Além cuidar de você. As máquinas nunca correram atrás de mais ninguém." },
+    { speaker: "aysha", text: "Por quê?" },
+    { speaker: "cassandra", text: "Porque aqui só existe quem alguém ainda carrega. E a única que ainda carrega a gente é você." },
+    { speaker: "victor", text: "Esquecida, você não podia largar a gente. Lembrando de tudo, pode. E aí a gente some. Como se nunca tivesse existido." },
+    { speaker: "aysha", text: "Vocês não vieram pedir perdão." },
+    { speaker: "cassandra", text: "Viemos pedir para continuar. Não é a mesma coisa." },
+    { speaker: "victor", text: "O que a gente fez foi serviço. Você fez pior, e fez por conta própria." },
+    { speaker: "narrator", text: "Atrás dela, o pai e a mãe não dizem nada. Esperam." },
+  ]),
+
+  // Perdoar: ela não termina o que eles começaram. Eles continuam existindo —
+  // mas longe daqui, lá embaixo, no campo que eles mesmos inventaram para ela.
+  // Ninguém levanta a mão: quem os tira do refúgio é o próprio lugar.
+  "ending-forgive": linear([
+    { speaker: "aysha", text: "Eu passei a vida inteira terminando o que vocês começaram. Não vou terminar mais nada." },
+    { speaker: "cassandra", text: "Então a gente fica?" },
+    { speaker: "aysha", text: "Vocês continuam. Mas não aqui." },
+    { speaker: "narrator", text: "O pai dá um passo e fica ao lado dela. A mãe, do outro. Ninguém levanta a mão." },
+    { speaker: "aysha", text: "Desçam a colina. E não subam de novo." },
+    { speaker: "victor", text: "Lá embaixo não tem nada." },
+    { speaker: "aysha", text: "Tem o campo. Vocês gostavam tanto dele." },
+  ]),
+  "ending-forgive-gone": linear([
+    { speaker: "narrator", text: "Os dois recuam até a borda. Depois dela, a luz morna não os acompanha." },
+    { speaker: "narrator", text: "Lá embaixo, o campo vai continuar existindo. Eles também. Só não aqui em cima." },
+  ]),
+  "ending-forgive-stay": linear([
+    { speaker: "mother", text: "Foi a coisa mais difícil que você já fez." },
+    { speaker: "aysha", text: "Não parece que acabou." },
+    { speaker: "father", text: "Não acaba de uma vez. Mas agora pode acabar devagar." },
+    { speaker: "narrator", text: "Aysha senta entre os dois, debaixo da árvore pequena. Ninguém tem pressa de dizer mais nada." },
+  ]),
+
+  // Vingar-se: um confronto curto, sem golpe nenhum. A arma dela é a mesma que
+  // eles temiam: lembrar de tudo, dizer tudo em voz alta — e então esquecer.
+  "ending-revenge": linear([
+    { speaker: "aysha", text: "Vocês têm razão. Enquanto eu lembrar, vocês existem." },
+    { speaker: "narrator", text: "Ela anda até eles. Os dois dão um passo para trás, e a borda não deixa dar o segundo." },
+    { speaker: "victor", text: "Você já fez isso uma vez. Olha no que deu." },
+    { speaker: "aysha", text: "Da outra vez eu fiz no escuro. Agora eu estou vendo." },
+    { speaker: "narrator", text: "Ela não levanta a mão. Diz os dois nomes, e diz o que eles fizeram. Inteiro. Sem pular nada." },
+    { speaker: "cassandra", text: "Aysha, espera—" },
+    { speaker: "aysha", text: "E agora eu esqueço vocês." },
+  ]),
+  "ending-revenge-gone": linear([
+    { speaker: "narrator", text: "Não há grito. A luz passa por eles como se já não houvesse nada ali. E então não há." },
+    { speaker: "narrator", text: "Nem sombra, nem marca na terra. Nem, daqui a pouco, o nome." },
+  ]),
+  "ending-revenge-return": linear([
+    { speaker: "narrator", text: "Ela desce de volta para o patamar. O chão é o mesmo. Ela, não inteiramente." },
+    { speaker: "father", text: "Acabou?" },
+    { speaker: "aysha", text: "Acabou. Não sobrou nem o que odiar." },
+    { speaker: "mother", text: "Então senta aqui. Com a gente." },
+  ]),
 } as const satisfies Record<string, Dialogue>;
 
 export type DialogueId = keyof typeof dialogues;

@@ -5,6 +5,7 @@ import { runInteraction } from "@/game/interaction/actions";
 import { installDefaultInteractionHandlers } from "@/game/interaction/defaultHandlers";
 import { findFocus } from "@/game/interaction/focus";
 import { getInteractables } from "@/game/interaction/registry";
+import { ayshaPosition } from "@/game/player/playerView";
 import { consumeInteract } from "@/game/input/input";
 import { selectCanInteract, useGameStore } from "@/game/state/gameStore";
 
@@ -26,7 +27,12 @@ export function InteractionSystem() {
     let focus = null;
     if (selectCanInteract(state)) {
       camera.getWorldDirection(viewDirection);
-      focus = findFocus(getInteractables(), { position: camera.position, direction: viewDirection }, currentId);
+      // A mira é o centro da tela; o alcance se mede a partir da Aysha.
+      focus = findFocus(
+        getInteractables(),
+        { position: camera.position, direction: viewDirection, reachFrom: ayshaPosition(camera.position) },
+        currentId,
+      );
     }
 
     // Só atualiza o estado quando o foco muda (sem re-render por frame).

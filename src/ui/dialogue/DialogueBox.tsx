@@ -25,11 +25,13 @@ export function DialogueBox() {
   return (
     <section
       aria-label="Diálogo"
-      className={`absolute inset-x-0 bottom-[8vh] mx-auto w-[min(92%,42rem)] animate-[dialogue-box-in_0.45s_ease-out] motion-reduce:animate-none ${
+      className={`absolute inset-x-0 bottom-[8vh] mx-auto w-[min(96%,50rem)] animate-[dialogue-box-in_0.45s_ease-out] motion-reduce:animate-none ${
         blocking ? "pointer-events-auto" : "pointer-events-none"
       }`}
     >
-      <div className="bg-gradient-to-b from-black/55 to-black/70 px-7 py-5 text-stone-100 backdrop-blur-[2px]">
+      {/* Sem caixa: uma sombra que se dissolve nas bordas, como legenda de cinema.
+          O texto fica legível e a cena continua inteira atrás dele. */}
+      <div className="bg-[radial-gradient(closest-side,rgba(8,6,4,0.5)_0%,rgba(8,6,4,0.32)_55%,transparent_100%)] px-16 py-10 text-stone-100 [text-shadow:0_1px_14px_rgba(0,0,0,0.85)]">
         <div key={stepKey} className="animate-[dialogue-in_0.4s_ease-out] motion-reduce:animate-none">
           {step.kind === "line" ? (
             <DialogueLineView line={step.line} isFinal={step.isFinal} blocking={blocking} onAdvance={advanceDialogue} />

@@ -20,6 +20,12 @@ export const storyFlags = [
   "hill-reached",
   "hill-climbed",
   "refuge-seen",
+  // O refúgio: os pais aparecem, e depois ela lembra de tudo.
+  "parents-found",
+  "remembered",
+  // O fim: os dois aparecem na beira do refúgio, e depois não estão mais lá.
+  "guides-return",
+  "guides-gone",
 ] as const;
 export type StoryFlag = (typeof storyFlags)[number];
 
@@ -73,6 +79,14 @@ export const storyBeats = {
     dialogue: "field-empty",
     requires: { flags: ["they-lied"] },
     delay: 4,
+  },
+  // No refúgio, quando a cena do reencontro devolve o controle: o que sobra
+  // depois de lembrar de tudo. Não trava — ela pode ir até os dois ou só ficar.
+  "refuge-after": {
+    zone: "hillside",
+    dialogue: "refuge-after",
+    requires: { flags: ["remembered"] },
+    delay: 2.5,
   },
   // Depois da primeira lembrança o Além mostra os dentes: algo ronda o campo.
   "machine-arrives": {

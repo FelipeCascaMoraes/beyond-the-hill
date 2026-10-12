@@ -27,7 +27,7 @@ export function Lighting() {
     const sky = skyRef.current;
     if (!sun || !sky) return;
 
-    resolveLight(lightBlend(camera.position.y), target);
+    resolveLight(lightBlend(camera.position), target);
     const step = 1 - Math.exp(-delta * MOOD_SPEED);
 
     sun.intensity += (target.sun - sun.intensity) * step;

@@ -420,14 +420,16 @@ interface PoiVisualConfig {
   reach: number;
   /** Raio da clareira na grama em volta (m), para o objeto se destacar. */
   clearing: number;
+  /** Raio da sombra de contato (m): só para o que tem peso e fica de pé no campo. */
+  shadow?: number;
 }
 
 export const poiVisuals: Record<PoiKind, PoiVisualConfig> = {
   horseshoe: { Visual: Horseshoe, targetHeight: 0.05, targetRadius: 0.4, reach: 2.4, clearing: 1.4 },
   fence: { Visual: Fence, targetHeight: 0.7, targetRadius: 0.6, reach: 2.8, clearing: 1.4 },
-  cairn: { Visual: Cairn, targetHeight: 0.45, targetRadius: 0.6, reach: 2.8, clearing: 1.8 },
+  cairn: { Visual: Cairn, targetHeight: 0.45, targetRadius: 0.6, reach: 2.8, clearing: 1.8, shadow: 0.9 },
   flowers: { Visual: Flowers, targetHeight: 0.55, targetRadius: 1.3, reach: 3.2, clearing: 2.4 },
-  boulder: { Visual: Boulder, targetHeight: 0.6, targetRadius: 1.4, reach: 3.6, clearing: 2.6 },
+  boulder: { Visual: Boulder, targetHeight: 0.6, targetRadius: 1.4, reach: 3.6, clearing: 2.6, shadow: 2.2 },
   gate: { Visual: Gate, targetHeight: 0.8, targetRadius: 1.3, reach: 3.2, clearing: 2.4 },
   // Dentro da casa: a grama é removida pela própria casa (clearing 0 = nenhuma extra).
   drawing: { Visual: Drawing, targetHeight: FLOOR + 1.55, targetRadius: 0.35, reach: 2.4, clearing: 0 },

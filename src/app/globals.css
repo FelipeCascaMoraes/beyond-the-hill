@@ -36,6 +36,25 @@ body {
   100% { transform: translate(0, 0); }
 }
 
+/* Tela de carregamento. Só CSS, de propósito: já vem no HTML e anima antes de
+   o JavaScript chegar. O título sai de um desfoque, letra a letra. */
+@keyframes title-letter-in {
+  from { opacity: 0; filter: blur(10px); transform: translateY(14px); }
+  to { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+
+/* A frase e o aviso de carregamento. */
+@keyframes loading-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Os três pontos do aviso acendem um depois do outro. */
+@keyframes loading-dot {
+  0%, 70%, 100% { opacity: 0.2; }
+  35% { opacity: 1; }
+}
+
 /* Brilho atrás da colina, respirando devagar. */
 .hill-glow {
   animation: hill-glow 9s ease-in-out infinite;
@@ -72,6 +91,28 @@ body {
 @keyframes dialogue-in {
   from { opacity: 0; transform: translateY(4px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+/* A escolha do fim aparece devagar: o mundo escurece nas bordas antes das palavras. */
+@keyframes choice-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* O fim: a tela escurece sobre a colina, depois o título volta como na abertura. */
+@keyframes end-dark {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes end-title {
+  from { opacity: 0; filter: blur(8px); transform: translateY(8px); }
+  to { opacity: 1; filter: blur(0); transform: translateY(0); }
+}
+
+@keyframes end-divider {
+  from { opacity: 0; transform: scaleX(0); }
+  to { opacity: 1; transform: scaleX(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {

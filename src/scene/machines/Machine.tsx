@@ -8,6 +8,8 @@ import { areMachinesPaused } from "@/game/debug/devFlags";
 import { alertOf, createMachineActor, updateMachine, type MachineAlert } from "@/game/machine/machineLogic";
 import { selectDialogueBlocksMovement, useGameStore } from "@/game/state/gameStore";
 import { terrainHeight } from "@/game/world/terrain";
+import { ayshaPosition } from "@/game/player/playerView";
+import { GroundShadow } from "../world/GroundShadow";
 import { MachineFigure } from "./MachineFigure";
 
 /** Cor do olho em cada estado: calma, desconfiança, caçada. */
@@ -32,6 +34,7 @@ export function Machine({ id }: { id: MachineId }) {
   const spawnEpoch = useGameStore((state) => state.spawnEpoch);
 
   const groupRef = useRef<Group>(null);
+  const shadowRef = useRef<Group>(null);
   const bodyRef = useRef<Group>(null);
   const eyeRef = useRef<Mesh>(null);
   const actorRef = useRef(createMachineActor(machine));
@@ -51,6 +54,8 @@ export function Machine({ id }: { id: MachineId }) {
 
     const state = useGameStore.getState();
     const actor = actorRef.current;
+    // Quem ela caça é a Aysha, não a câmera (que em 3ª pessoa fica metros atrás).
+    const aysha = ayshaPosition(camera.position);
     const frozen =
       state.phase !== "playing" ||
       state.captured ||
@@ -60,11 +65,7 @@ export function Machine({ id }: { id: MachineId }) {
       areMachinesPaused();
 
     if (!frozen) {
-      const target = {
-        x: camera.position.x,
-        z: camera.position.z,
-        sheltered: isSheltered(state.zone, camera.position.x, camera.position.z),
-      };
+      const target = { x: aysha.x, z: aysha.z, sheltered: isSheltered(state.zone, aysha.x, aysha.z) };
       const before = actor.state;
       const event = updateMachine(actor, target, Math.min(delta, MAX_FRAME_TIME), machine, keepOut.current);
 
@@ -83,6 +84,7 @@ export function Machine({ id }: { id: MachineId }) {
     const hover = alert === "chase" ? 0.06 : 0.14;
     group.position.set(actor.x, ground + machine.hover + Math.sin(clock.elapsedTime * 1.3) * hover, actor.z);
     group.rotation.y = actor.yaw;
+    shadowRef.current?.position.set(actor.x, ground, actor.z);
     body.rotation.y = clock.elapsedTime * (alert === "calm" ? 0.5 : 1.6);
 
     const eye = eyeRef.current;
@@ -91,13 +93,19 @@ export function Machine({ id }: { id: MachineId }) {
       material.color.lerp(eyeColors[alert], 1 - Math.exp(-4 * delta));
     }
 
-    const distance = Math.hypot(camera.position.x - actor.x, camera.position.z - actor.z);
+    const distance = Math.hypot(aysha.x - actor.x, aysha.z - actor.z);
     machineAudio.update(frozen ? null : distance, alert);
   });
 
   return (
-    <group ref={groupRef}>
-      <MachineFigure bodyRef={bodyRef} eyeRef={eyeRef} />
-    </group>
+    <>
+      <group ref={groupRef}>
+        <MachineFigure bodyRef={bodyRef} eyeRef={eyeRef} />
+      </group>
+      {/* A sombra fica no chão enquanto ela flutua: é o que mostra que não pisa. */}
+      <group ref={shadowRef}>
+        <GroundShadow x={0} z={0} radius={1.1} opacity={0.38} local />
+      </group>
+    </>
   );
 }

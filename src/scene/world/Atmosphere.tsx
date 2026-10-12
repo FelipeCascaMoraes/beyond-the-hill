@@ -34,7 +34,7 @@ export function Atmosphere() {
     const fog = fogRef.current;
     if (!fog) return;
 
-    resolveAir(airBlend(camera.position.y), target);
+    resolveAir(airBlend(camera.position), target);
     const step = 1 - Math.exp(-delta * AIR_SPEED);
 
     const horizon = uniforms.uHorizonColor.value;
@@ -49,7 +49,9 @@ export function Atmosphere() {
   return (
     <>
       <fogExp2 ref={fogRef} attach="fog" args={[worldMoods.idle.horizonColor, worldMoods.idle.fogDensity]} />
-      <mesh matrixAutoUpdate={false}>
+      {/* Por último entre os opacos: o que o chão e a grama já cobriram nem chega
+          ao shader do céu. */}
+      <mesh matrixAutoUpdate={false} renderOrder={2}>
         <sphereGeometry args={[atmosphere.skyRadius, 32, 16]} />
         <shaderMaterial
           vertexShader={skyVertexShader}
