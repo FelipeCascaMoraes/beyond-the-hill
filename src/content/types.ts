@@ -360,3 +360,42 @@ export interface Choice {
   prompt?: string;
   options: readonly ChoiceOption[];
 }
+
+// ── Roteiro ──────────────────────────────────────────────────────────────
+// O que fazer agora, dito na tela: um passo de cada vez, com a direção e sem a
+// resposta. Ver content/guide.ts e game/guide.
+
+/** Para onde a seta do roteiro aponta. */
+export type GuideTarget =
+  /** Um lugar só. */
+  | { type: "point"; position: readonly [number, number] }
+  /** Vários lugares que servem: aponta para o mais perto ainda não examinado. */
+  | { type: "any"; points: readonly { position: readonly [number, number]; dialogue: DialogueId }[] }
+  /** Um caminho: aponta alguns metros adiante nele, até o fim. */
+  | { type: "trail"; path: readonly { x: number; z: number }[] };
+
+/** Um passo do roteiro. Vale o primeiro, na ordem declarada, ainda não cumprido. */
+export interface GuideStep {
+  /** A zona onde o passo se cumpre. Em outra zona, o roteiro diz como chegar lá. */
+  zone: ZoneId;
+  /** O passo está cumprido quando esta condição vale. */
+  until: Requirement;
+  /** O que fazer, em uma linha. */
+  title: string;
+  /** Como: a direção, sem a resposta. */
+  hint: string;
+  /** Sem alvo, o passo só pede para esperar. */
+  target?: GuideTarget;
+  /** Contagem mostrada ao lado do título ("2 de 3"). */
+  tally?: { dialogues: readonly DialogueId[]; of: number };
+}
+
+/** Como ir de uma zona para onde o passo atual se cumpre. */
+export interface GuidePassage {
+  from: ZoneId;
+  /** Zonas a que esta passagem leva (direto ou seguindo adiante). */
+  to: readonly ZoneId[];
+  title: string;
+  hint: string;
+  position: readonly [number, number];
+}

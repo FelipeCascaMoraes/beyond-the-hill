@@ -9,7 +9,7 @@ import type { CharacterModelConfig } from "@/content";
 // o que muda de um para outro são dados (content/characterModels.ts).
 
 /** O que o personagem está fazendo. Cada arquivo traz as animações que tiver. */
-export type CharacterAnimation = "idle" | "walk" | "talk";
+export type CharacterAnimation = "idle" | "walk" | "run" | "talk";
 
 /**
  * Como reconhecer cada animação pelo nome do clipe. Os nomes variam com a
@@ -19,8 +19,12 @@ export type CharacterAnimation = "idle" | "walk" | "talk";
 const CLIP_NAMES: Record<CharacterAnimation, RegExp> = {
   idle: /idle|breath|stand|parad/i,
   walk: /walk|andar|caminh/i,
+  run: /run|corr/i,
   talk: /talk|speak|fala/i,
 };
+
+/** O que tocar quando o arquivo não tem a animação pedida, em ordem; a de parado vale para todas. */
+const FALLBACKS: Partial<Record<CharacterAnimation, CharacterAnimation[]>> = { run: ["walk"] };
 
 /** Quanto leva a passagem de uma animação para outra (s). */
 const CROSS_FADE = 0.35;
@@ -54,7 +58,8 @@ interface CharacterModelProps {
  *
  * O arquivo pode vir em qualquer escala e com a origem em qualquer lugar: o
  * modelo é medido e posto com os pés no chão, centrado, na altura declarada.
- * Toca a animação pedida se o arquivo a tiver; sem ela, cai para a de parado;
+ * Toca a animação pedida se o arquivo a tiver; sem ela, cai para a de parado
+ * (a corrida, antes, para a caminhada);
  * sem nenhuma, fica na pose em que foi exportado.
  */
 export function CharacterModel({ config, animation = "idle" }: CharacterModelProps) {
@@ -102,7 +107,8 @@ export function CharacterModel({ config, animation = "idle" }: CharacterModelPro
   const { actions, names } = useAnimations(gltf.animations, rootRef);
 
   useEffect(() => {
-    const name = names.find((clip) => CLIP_NAMES[animation].test(clip)) ?? names.find((clip) => CLIP_NAMES.idle.test(clip));
+    const wanted: CharacterAnimation[] = [animation, ...(FALLBACKS[animation] ?? []), "idle"];
+    const name = wanted.map((kind) => names.find((clip) => CLIP_NAMES[kind].test(clip))).find(Boolean);
     const action = name ? actions[name] : null;
     if (!action) return;
     action.reset().fadeIn(CROSS_FADE).play();

@@ -9,6 +9,7 @@ import { ChoicePrompt } from "./choice/ChoicePrompt";
 import { EndScreen } from "./ending/EndScreen";
 import { ControlsHint } from "./ControlsHint";
 import { DialogueBox } from "./dialogue/DialogueBox";
+import { GuideHint } from "./guide/GuideHint";
 import { InteractionPrompt } from "./InteractionPrompt";
 import { CaptureOverlay } from "./machine/CaptureOverlay";
 import { ThreatVignette } from "./machine/ThreatVignette";
@@ -29,6 +30,7 @@ export function GameUI() {
           <ThreatVignette />
           <CinematicOverlay />
           <ControlsHint />
+          <GuideHint />
           <InteractionPrompt />
           <DialogueBox />
           <ChoicePrompt />

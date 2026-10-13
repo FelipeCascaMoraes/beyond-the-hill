@@ -35,7 +35,7 @@ export function ControlsHint() {
         Clique para olhar ao redor
       </p>
       <p className="text-[0.7rem] tracking-[0.3em] text-stone-200/70 uppercase [text-shadow:0_1px_8px_rgba(0,0,0,0.6)]">
-        W A S D caminhar · Shift correr · E interagir · C trocar câmera · Esc soltar o mouse
+        W A S D caminhar · Shift correr · E interagir · C trocar câmera · H roteiro · Esc soltar o mouse
       </p>
     </div>
   );

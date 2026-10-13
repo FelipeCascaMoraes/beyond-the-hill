@@ -23,8 +23,8 @@ export interface CharacterModelConfig {
 
 export const characterModels = {
   // Só aparece com a câmera em 3ª pessoa (scene/player/AyshaBody).
-  // O arquivo atual vem de frente para -Z: meia-volta para olhar para +Z.
-  aysha: { model: "aysha", height: 1.7, rotationY: Math.PI },
+  // O arquivo é montado por scripts/models/build-aysha.mjs.
+  aysha: { model: "aysha", height: 1.7 },
   // Com o coque.
   cassandra: { model: "cassandra", height: 1.76 },
   // Com o chapéu.

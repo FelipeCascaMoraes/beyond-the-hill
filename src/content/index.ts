@@ -11,3 +11,4 @@ export * from "./machines";
 export * from "./cinematics";
 export * from "./choices";
 export * from "./characterModels";
+export * from "./guide";

@@ -21,10 +21,34 @@ com a figura provisória.
   `src/content/characterModels.ts` (`rotationY`).
 - **Esqueleto e animações dentro do mesmo arquivo**, se houver. O jogo
   reconhece os clipes pelo nome: um que contenha `idle` (parado), `walk`
-  (caminhada) e `talk` (fala). Sem animação, o modelo fica na pose em que foi
-  exportado. A caminhada deve ser "no lugar" (sem deslocar o personagem).
+  (caminhada), `run` (corrida) e `talk` (fala). Sem animação, o modelo fica na
+  pose em que foi exportado. A caminhada e a corrida devem ser "no lugar" (sem
+  deslocar o personagem).
 - Compressão **Meshopt**, se quiser comprimir. **Draco não** é suportado.
 - Para o navegador: até ~20 mil triângulos e texturas de até 1024 px por
   personagem; o ideal é 1 a 2 MB por arquivo.
+
+## A Aysha
+
+`aysha.glb` não é copiado para cá à mão: é montado a partir do arquivo exportado
+(`scripts/models/aysha.source.glb`), que vem deitado, com os ossos fora das
+juntas e sem animação. Para refazer depois de trocar o arquivo de origem:
+
+```
+node scripts/models/build-aysha.mjs
+```
+
+## A Cassandra e o Victor
+
+`cassandra.glb` e `victor.glb` também são montados, a partir de
+`scripts/models/cassandra.source.glb` e `scripts/models/victor.source.glb`: os
+arquivos de origem vêm deitados, sem normais e com peças mais curtas do que os
+personagens pedem (o vestido, o casaco, a aba do chapéu). Não têm esqueleto: os
+dois esperam de pé. Para refazer:
+
+```
+node scripts/models/build-figure.mjs cassandra
+node scripts/models/build-figure.mjs victor
+```
 
 Cada arquivo precisa ser registrado em `public/CREDITS.md` (autor, fonte e licença).

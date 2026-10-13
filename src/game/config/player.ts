@@ -39,7 +39,7 @@ export interface PlayerConfig {
 export const playerConfig: PlayerConfig = {
   eyeHeight: 1.62,
   walkSpeed: 2.4,
-  runSpeed: 3.8,
+  runSpeed: 4.4,
   acceleration: 6,
   deceleration: 8,
   lookSensitivity: 0.0016,

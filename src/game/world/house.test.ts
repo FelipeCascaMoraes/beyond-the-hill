@@ -53,3 +53,34 @@ test("gatilho de área: dispara dentro do raio, uma vez", () => {
   assert.equal(areaTriggerAt(areaTriggers, "arrival", gx, gz, context()), null, "antes da caçada, não diz nada");
   assert.equal(areaTriggerAt(areaTriggers, "arrival", gx, gz, context([], ["hunt-began"])), "guides-again");
 });
+
+test("da casa até a porteira, os guias e o despertar, a Aysha não empaca na borda do campo", async () => {
+  const { playerConfig } = await import("../config/player.ts");
+  const { createPlayerState, updatePlayer } = await import("../player/playerController.ts");
+  const { getPlayerEnvironment } = await import("../player/spawn.ts");
+  const environment = getPlayerEnvironment("arrival", { flags: [], seenDialogues: [], recoveredMemories: [] });
+  const doorX = HOUSE.x + HOUSE.width / 2 + 1;
+  // Da porta e das duas quinas do lado do campo, andando sempre de frente para o destino.
+  const starts: (readonly [number, number])[] = [
+    [doorX, HOUSE.z],
+    [doorX, HOUSE.z - HOUSE.depth / 2 - 1],
+    [doorX, HOUSE.z + HOUSE.depth / 2 + 1],
+  ];
+  const targets: (readonly [number, number])[] = [pointsOfInterest.gate.position, [-2, -10], [0, 0]];
+  const dt = 1 / 60;
+  for (const [startX, startZ] of starts) {
+    for (const [targetX, targetZ] of targets) {
+      const player = createPlayerState({ x: startX, z: startZ, eyeY: 0, yaw: 0, pitch: 0 });
+      let slow = 0;
+      for (let time = 0; time < 12; time += dt) {
+        player.yaw = player.targetYaw = Math.atan2(-(targetX - player.x), -(targetZ - player.z));
+        const beforeX = player.x;
+        const beforeZ = player.z;
+        updatePlayer(player, { forward: 1, strafe: 0, lookDeltaX: 0, lookDeltaY: 0 }, dt, environment, playerConfig);
+        const speed = Math.hypot(player.x - beforeX, player.z - beforeZ) / dt;
+        slow = time > 0.6 && speed < playerConfig.walkSpeed * 0.35 ? slow + dt : 0;
+        assert.ok(slow < 1, `quase parada em (${player.x.toFixed(1)}, ${player.z.toFixed(1)}), indo de (${startX}, ${startZ}) para (${targetX}, ${targetZ})`);
+      }
+    }
+  }
+});

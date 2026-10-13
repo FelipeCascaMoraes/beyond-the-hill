@@ -163,6 +163,22 @@ const addUnique = <T,>(list: readonly T[], ...items: readonly T[]): readonly T[]
 type DialogueSlice = Pick<GameState, "activeDialogue" | "seenDialogues" | "knownCharacters" | "flags">;
 
 /**
+ * Uma fala em andamento foi cortada (por outra conversa, uma lembrança, uma
+ * cena, uma captura): conta como vista e deixa os marcos dela mesmo assim. Sem
+ * os marcos, cortar a fala errada deixaria a história esperando para sempre
+ * por algo que não se repete — apertar E perto dos dois durante "guides-again"
+ * bastava para a lembrança seguinte nunca abrir.
+ */
+function interruptDialogue(state: Pick<GameState, "activeDialogue" | "seenDialogues" | "flags">): Pick<GameState, "seenDialogues" | "flags"> {
+  if (!state.activeDialogue) return { seenDialogues: state.seenDialogues, flags: state.flags };
+  const { id } = state.activeDialogue;
+  return {
+    seenDialogues: addUnique(state.seenDialogues, id),
+    flags: addUnique(state.flags, ...(dialogues[id].setsFlags ?? [])),
+  };
+}
+
+/**
  * Aplica um novo cursor: `null` encerra (marca a conversa como vista e
  * registra seus marcos); caso contrário, aprende nomes apresentados na nova fala.
  */
@@ -199,8 +215,8 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
   // Uma fala de fundo em andamento pode ser interrompida: conta como vista (não se repete).
   startDialogue: (id) =>
     set((state) => {
-      const seenDialogues = state.activeDialogue ? addUnique(state.seenDialogues, state.activeDialogue.id) : state.seenDialogues;
-      return moveDialogue({ ...state, seenDialogues }, id, beginDialogue(dialogues[id]));
+      const interrupted = interruptDialogue(state);
+      return { ...interrupted, ...moveDialogue({ ...state, ...interrupted }, id, beginDialogue(dialogues[id])) };
     }),
 
   advanceDialogue: () =>
@@ -224,8 +240,7 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
     if (state.activeMemory || selectDialogueBlocksMovement(state)) return false;
     if (!canActivate(memoryStatus(id, memories[id], state))) return false;
     // Fala de fundo em andamento: interrompida e contada como vista.
-    const seenDialogues = state.activeDialogue ? addUnique(state.seenDialogues, state.activeDialogue.id) : state.seenDialogues;
-    set({ activeMemory: { id, fragment: 0 }, activeDialogue: null, seenDialogues, interactionFocus: null });
+    set({ activeMemory: { id, fragment: 0 }, activeDialogue: null, ...interruptDialogue(state), interactionFocus: null });
     return true;
   },
 
@@ -256,7 +271,7 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
       threat: "calm",
       activeDialogue: null,
       interactionFocus: null,
-      seenDialogues: state.activeDialogue ? addUnique(state.seenDialogues, state.activeDialogue.id) : state.seenDialogues,
+      ...interruptDialogue(state),
     });
   },
 
@@ -280,12 +295,11 @@ export const useGameStore = create<GameState & GameActions>()((set, get) => ({
   startCinematic: (id) => {
     const state = get();
     if (state.activeCinematic || state.activeMemory || state.captured || state.traveling) return false;
-    const seenDialogues = state.activeDialogue ? addUnique(state.seenDialogues, state.activeDialogue.id) : state.seenDialogues;
     set({
       activeCinematic: { id, step: 0 },
       seenCinematics: addUnique(state.seenCinematics, id),
       activeDialogue: null,
-      seenDialogues,
+      ...interruptDialogue(state),
       interactionFocus: null,
       threat: "calm",
     });

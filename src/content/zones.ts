@@ -19,6 +19,11 @@ export const zones = {
     bounds: [
       { center: [0, 4], radius: 38 },
       { center: [-44, 12], radius: 12 },
+      // A passagem entre os dois. Sem ela, os círculos só se tocam por um
+      // gargalo a leste da casa, e quem sai da porta direto para a porteira
+      // raspa na quina de fora dos dois: o limite suave segura o passo e a
+      // Aysha fica quase parada ali por vários segundos.
+      { center: [-34, 8], radius: 14 },
     ],
   },
   houses: { title: "As Casas Abandonadas", ...placeholder },

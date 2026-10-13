@@ -6,6 +6,7 @@ import { getCameraMode, subscribeCameraMode } from "@/game/player/cameraMode";
 import { playerView } from "@/game/player/playerView";
 import { thirdPersonConfig } from "@/game/player/thirdPerson";
 import { prefersReducedMotion } from "@/lib/motion";
+import type { CharacterAnimation } from "../actors/CharacterModel";
 import { NpcFigure } from "../actors/NpcFigure";
 import { GroundShadow } from "../world/GroundShadow";
 
@@ -13,6 +14,8 @@ import { GroundShadow } from "../world/GroundShadow";
 const TURN_RATE = 9;
 /** Abaixo desta velocidade ela está parada (m/s): não vira nem troca de animação. */
 const MOVING_ABOVE = 0.35;
+/** Acima desta ela corre (m/s): a meio caminho entre o passo e a corrida. */
+const RUNNING_ABOVE = (playerConfig.walkSpeed + playerConfig.runSpeed) / 2;
 /** Sombra de contato, como a dos outros personagens. */
 const SHADOW_RADIUS = 0.75;
 const SHADOW_OPACITY = 0.5;
@@ -43,7 +46,7 @@ function Body() {
   const bodyRef = useRef<Group>(null);
   /** Para onde o corpo está virado; nulo até ela aparecer pela primeira vez. */
   const heading = useRef<number | null>(null);
-  const [moving, setMoving] = useState(false);
+  const [animation, setAnimation] = useState<CharacterAnimation>("idle");
 
   useFrame((_, delta) => {
     const group = groupRef.current;
@@ -56,7 +59,8 @@ function Body() {
 
     const speed = Math.hypot(playerView.velocityX, playerView.velocityZ);
     const walking = speed > MOVING_ABOVE;
-    if (walking !== moving) setMoving(walking);
+    const next = !walking ? "idle" : speed > RUNNING_ABOVE ? "run" : "walk";
+    if (next !== animation) setAnimation(next);
 
     // A frente das figuras é +Z; a câmera olha para -Z com yaw 0.
     if (heading.current === null) heading.current = playerView.yaw + Math.PI;
@@ -79,7 +83,7 @@ function Body() {
   return (
     <group ref={groupRef} visible={false}>
       <group ref={bodyRef}>
-        <NpcFigure character="aysha" animation={moving ? "walk" : "idle"} />
+        <NpcFigure character="aysha" animation={animation} />
       </group>
       <GroundShadow x={0} z={0} radius={SHADOW_RADIUS} opacity={SHADOW_OPACITY} local />
     </group>
