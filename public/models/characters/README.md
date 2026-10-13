@@ -40,11 +40,10 @@ node scripts/models/build-aysha.mjs
 
 ## A Cassandra e o Victor
 
-`cassandra.glb` e `victor.glb` também são montados, a partir de
-`scripts/models/cassandra.source.glb` e `scripts/models/victor.source.glb`: os
-arquivos de origem vêm deitados, sem normais e com peças mais curtas do que os
-personagens pedem (o vestido, o casaco, a aba do chapéu). Não têm esqueleto: os
-dois esperam de pé. Para refazer:
+`cassandra.glb` e `victor.glb` não vêm de arquivo nenhum: o corpo, o rosto e a
+roupa dos dois são modelados por `scripts/models/build-figure.mjs`, anel por
+anel. Para mudar uma proporção, uma cor ou um traço do rosto, mexe-se nos
+números do script. Não têm esqueleto: os dois esperam de pé. Para refazer:
 
 ```
 node scripts/models/build-figure.mjs cassandra
