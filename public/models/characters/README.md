@@ -28,26 +28,20 @@ com a figura provisória.
 - Para o navegador: até ~20 mil triângulos e texturas de até 1024 px por
   personagem; o ideal é 1 a 2 MB por arquivo.
 
-## A Aysha
+## Como os três são feitos
 
-`aysha.glb` não é copiado para cá à mão: é montado a partir do arquivo exportado
-(`scripts/models/aysha.source.glb`), que vem deitado, com os ossos fora das
-juntas e sem animação. Para refazer depois de trocar o arquivo de origem:
+Nenhum dos três arquivos vem de fora: o corpo, o rosto e a roupa de cada um são
+modelados por script, anel por anel, com as ferramentas de
+`scripts/models/figure-kit.mjs`. Para mudar uma proporção, uma cor ou um traço
+do rosto, mexe-se nos números do script e roda-se de novo:
 
 ```
 node scripts/models/build-aysha.mjs
-```
-
-## A Cassandra e o Victor
-
-`cassandra.glb` e `victor.glb` não vêm de arquivo nenhum: o corpo, o rosto e a
-roupa dos dois são modelados por `scripts/models/build-figure.mjs`, anel por
-anel. Para mudar uma proporção, uma cor ou um traço do rosto, mexe-se nos
-números do script. Não têm esqueleto: os dois esperam de pé. Para refazer:
-
-```
 node scripts/models/build-figure.mjs cassandra
 node scripts/models/build-figure.mjs victor
 ```
+
+A Aysha leva esqueleto e os clipes `Idle`, `Walk` e `Run`, escritos no próprio
+script. A Cassandra e o Victor não têm esqueleto: os dois esperam de pé.
 
 Cada arquivo precisa ser registrado em `public/CREDITS.md` (autor, fonte e licença).

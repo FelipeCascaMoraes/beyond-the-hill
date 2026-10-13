@@ -1,169 +1,293 @@
-// Prepara o modelo da Aysha para o jogo:
+// Modela a Aysha para o jogo:
 //
-//   node scripts/models/build-aysha.mjs [arquivo-de-origem.glb]
+//   node scripts/models/build-aysha.mjs
 //
-// Lê o arquivo exportado (scripts/models/aysha.source.glb, se nenhum for
-// passado) e escreve public/models/characters/aysha.glb no contrato que o jogo
-// espera (public/models/characters/README.md). O arquivo de origem vem:
+// Escreve public/models/characters/aysha.glb. Não parte de arquivo nenhum — o
+// corpo inteiro é desenhado aqui, com as ferramentas de figure-kit.mjs (lá
+// está explicado como uma superfície é feita de anéis).
 //
-//   • deitado para o glTF: Z para cima e o rosto para -Y. Aqui vira Y para
-//     cima, rosto para +Z;
-//   • com os ossos fora das juntas da malha (o esqueleto é de um corpo menor):
-//     girar a coxa dobraria a perna no meio. Cada osso vai para a junta que a
-//     malha desenha — a esfera do joelho, do ombro, do cotovelo;
-//   • com peças presas ao osso errado (o colar no pé, o queixo no quadril);
-//   • em 105 malhas, uma por peça: aqui viram uma por material;
-//   • sem animação nenhuma: os clipes Idle, Walk e Run são escritos aqui.
+// Diferente da Cassandra e do Victor, ela anda: o arquivo leva um esqueleto e
+// os clipes Idle, Walk e Run, escritos aqui. Cada parte do corpo é modelada
+// dentro de um `bind`, que diz que osso ela segue; as que atravessam uma junta
+// (a perna pelo joelho, o braço pelo cotovelo, o tronco pela cintura) dividem
+// o peso entre os dois ossos numa faixa em volta dela, e dobram sem abrir.
 //
-// Sem dependências: lê e escreve o GLB na mão.
+// Blusa marfim de manga curta, alças escuras, cinto marrom com duas bolsas,
+// calça escura com joelheiras, botas, luvas sem dedos; o cabelo castanho
+// comprido, com franja.
 
-import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { add, along, bind, blob, bothSides, hand, head, loft, scale, writeFigure } from "./figure-kit.mjs";
 
-const SOURCE = process.argv[2] ?? fileURLToPath(new URL("./aysha.source.glb", import.meta.url));
-const TARGET = fileURLToPath(new URL("../../public/models/characters/aysha.glb", import.meta.url));
-
-const RIG = "Aysha_Rig_";
-
-/** Peças que o arquivo prende ao osso errado: [nome da peça, osso certo]. */
-const REBIND = [
-  [/^(jaw|cheek|upper lip|fringe)/, () => "Head"],
-  [/^([LR]) thumb/, (match) => `${match[1]}_Hand`],
-  [/^(blouse button|left collar|right collar|strap buckle|necklace)/, () => "Chest"],
-  [/utility pouch/, () => "Hips"],
-  [/^cargo strap -1/, () => "L_Thigh"],
-  [/^cargo strap 1/, () => "R_Thigh"],
-];
-
-/** Quem é filho de quem; a ordem é a dos ossos no arquivo final. */
-const PARENTS = {
-  Root: null,
-  Hips: "Root",
-  Spine: "Hips",
-  Chest: "Spine",
-  Neck: "Chest",
-  Head: "Neck",
-  L_Shoulder: "Chest",
-  L_UpperArm: "L_Shoulder",
-  L_Forearm: "L_UpperArm",
-  L_Hand: "L_Forearm",
-  R_Shoulder: "Chest",
-  R_UpperArm: "R_Shoulder",
-  R_Forearm: "R_UpperArm",
-  R_Hand: "R_Forearm",
-  L_Thigh: "Hips",
-  L_Shin: "L_Thigh",
-  L_Foot: "L_Shin",
-  R_Thigh: "Hips",
-  R_Shin: "R_Thigh",
-  R_Foot: "R_Shin",
-};
-const BONES = Object.keys(PARENTS);
-
-// ---------------------------------------------------------------- leitura --
-
-const COMPONENTS = {
-  5120: ["readInt8", 1],
-  5121: ["readUInt8", 1],
-  5122: ["readInt16LE", 2],
-  5123: ["readUInt16LE", 2],
-  5125: ["readUInt32LE", 4],
-  5126: ["readFloatLE", 4],
-};
-const WIDTHS = { SCALAR: 1, VEC2: 2, VEC3: 3, VEC4: 4, MAT4: 16 };
-
-const file = readFileSync(SOURCE);
-if (file.readUInt32LE(0) !== 0x46546c67) throw new Error(`${SOURCE} não é um GLB.`);
-const jsonLength = file.readUInt32LE(12);
-const source = JSON.parse(file.subarray(20, 20 + jsonLength).toString("utf8"));
-const binStart = 20 + jsonLength + 8;
-
-/** Um accessor como lista de linhas (uma por vértice, índice ou matriz). */
-function readAccessor(index) {
-  const accessor = source.accessors[index];
-  const view = source.bufferViews[accessor.bufferView];
-  const [read, bytes] = COMPONENTS[accessor.componentType];
-  const width = WIDTHS[accessor.type];
-  const stride = view.byteStride ?? bytes * width;
-  const start = binStart + (view.byteOffset ?? 0) + (accessor.byteOffset ?? 0);
-  const rows = [];
-  for (let row = 0; row < accessor.count; row++) {
-    const values = [];
-    for (let column = 0; column < width; column++) values.push(file[read](start + row * stride + column * bytes));
-    rows.push(values);
-  }
-  return rows;
-}
-
-const skin = source.skins[0];
-const sourceBones = skin.joints.map((node) => source.nodes[node].name.replace(RIG, ""));
-
-/** As peças do arquivo, já de pé (Y para cima, rosto para +Z) e com o osso certo. */
-const pieces = [];
-for (const node of source.nodes) {
-  if (node.mesh === undefined) continue;
-  if (node.translation || node.rotation || node.scale || node.matrix) {
-    throw new Error(`A peça "${node.name}" tem transformação própria; o script espera todas na origem.`);
-  }
-  const mesh = source.meshes[node.mesh];
-  for (const primitive of mesh.primitives) {
-    const positions = readAccessor(primitive.attributes.POSITION).map(([x, y, z]) => [x, z, -y]);
-    const indices =
-      primitive.indices === undefined ? positions.map((_, index) => index) : readAccessor(primitive.indices).map(([index]) => index);
-
-    // Cada peça é rígida: segue um osso só. Vale o de maior peso do 1º vértice.
-    const joints = readAccessor(primitive.attributes.JOINTS_0)[0];
-    const weights = readAccessor(primitive.attributes.WEIGHTS_0)[0];
-    let bone = sourceBones[joints[weights.indexOf(Math.max(...weights))]];
-    for (const [pattern, fix] of REBIND) {
-      const match = pattern.exec(mesh.name);
-      if (match) bone = fix(match);
-    }
-    if (!BONES.includes(bone)) throw new Error(`A peça "${mesh.name}" pede o osso "${bone}", que não existe.`);
-
-    pieces.push({ name: mesh.name, material: primitive.material, positions, indices, bone });
-  }
-}
+const TARGET = process.argv[2] ?? fileURLToPath(new URL("../../public/models/characters/aysha.glb", import.meta.url));
 
 // ------------------------------------------------------------ o esqueleto --
+//
+// No arquivo, o lado "L" é o de x negativo. Aqui se modela o lado de x
+// positivo (o "R"); `bothSides` espelha a peça e troca o osso.
 
-/** A caixa de uma peça, pelo nome. */
-function boxOf(name) {
-  const piece = pieces.find((candidate) => candidate.name === name);
-  if (!piece) throw new Error(`O script procura a peça "${name}" para achar uma junta, e ela não está no arquivo.`);
-  const min = [Infinity, Infinity, Infinity];
-  const max = [-Infinity, -Infinity, -Infinity];
-  for (const position of piece.positions) {
-    for (let axis = 0; axis < 3; axis++) {
-      min[axis] = Math.min(min[axis], position[axis]);
-      max[axis] = Math.max(max[axis], position[axis]);
-    }
-  }
-  return { min, max, center: min.map((value, axis) => (value + max[axis]) / 2) };
-}
+/** O braço sai do ombro um pouco aberto; as animações o trazem para junto do corpo. */
+const ARM_OPEN = 0.24;
+const armDown = [Math.sin(ARM_OPEN), -Math.cos(ARM_OPEN), 0];
+const shoulder = [0.168, 1.392, -0.006];
+const UPPER_ARM = 0.265;
+const FOREARM = 0.235;
+const elbow = add(shoulder, scale(armDown, UPPER_ARM));
+const wrist = add(elbow, scale(armDown, FOREARM));
 
-// Onde cada osso gira: no meio da peça que desenha a junta, quando há uma.
-const waist = boxOf("trousers waist");
-const joints = {
-  Root: [0, 0, 0],
-  Hips: [0, waist.min[1] + 0.07, 0],
-  Spine: [0, waist.max[1] - 0.08, 0],
-  Chest: [0, waist.max[1], 0],
-  Neck: [0, boxOf("neck").min[1] + 0.04, 0],
-  Head: [0, boxOf("head").min[1] + 0.04, 0],
+const HIP = 0.9;
+const KNEE = 0.49;
+const ANKLE = 0.1;
+
+/** Onde cada osso gira, do lado de x positivo; o outro lado é o espelho. */
+const SIDE_JOINTS = {
+  Shoulder: [0.07, 1.4, -0.006],
+  UpperArm: shoulder,
+  Forearm: elbow,
+  Hand: wrist,
+  Thigh: [0.086, HIP, 0],
+  Shin: [0.092, KNEE, 0.004],
+  Foot: [0.094, ANKLE, -0.004],
 };
-for (const side of ["L", "R"]) {
-  const shoulder = boxOf(`${side} shoulder`).center;
-  const thigh = boxOf(`${side} upper trouser`);
-  const boot = boxOf(`${side} boot`);
-  joints[`${side}_Shoulder`] = [shoulder[0] * 0.55, shoulder[1], 0];
-  joints[`${side}_UpperArm`] = shoulder;
-  joints[`${side}_Forearm`] = boxOf(`${side} elbow`).center;
-  joints[`${side}_Hand`] = boxOf(`${side} glove cuff`).center;
-  joints[`${side}_Thigh`] = [thigh.center[0], thigh.max[1] - 0.055, 0];
-  joints[`${side}_Shin`] = boxOf(`${side} knee`).center;
-  joints[`${side}_Foot`] = [boot.center[0], boot.max[1] - 0.04, 0];
+const SIDE_PARENTS = { Shoulder: "Chest", UpperArm: "Shoulder", Forearm: "UpperArm", Hand: "Forearm", Thigh: "Hips", Shin: "Thigh", Foot: "Shin" };
+
+/** Os ossos, pais antes dos filhos. */
+const BONES = [
+  { name: "Root", parent: null, joint: [0, 0, 0] },
+  { name: "Hips", parent: "Root", joint: [0, 0.93, 0] },
+  { name: "Spine", parent: "Hips", joint: [0, 1.0, 0] },
+  { name: "Chest", parent: "Spine", joint: [0, 1.13, 0] },
+  { name: "Neck", parent: "Chest", joint: [0, 1.43, -0.01] },
+  { name: "Head", parent: "Neck", joint: [0, 1.485, -0.006] },
+];
+for (const [side, sign] of [
+  ["L", -1],
+  ["R", 1],
+]) {
+  for (const part of ["Shoulder", "UpperArm", "Forearm", "Hand", "Thigh", "Shin", "Foot"]) {
+    const [x, y, z] = SIDE_JOINTS[part];
+    const parent = SIDE_PARENTS[part];
+    BONES.push({ name: `${side}_${part}`, parent: parent in SIDE_JOINTS ? `${side}_${parent}` : parent, joint: [sign * x, y, z] });
+  }
 }
+
+/** O tronco, de baixo para cima: cintura, peito, base do pescoço, base da cabeça. */
+const torso = along(
+  (position) => position[1],
+  ["Hips", "Spine", "Chest", "Neck", "Head"],
+  [
+    [1.0, 0.08],
+    [1.13, 0.1],
+    [1.43, 0.05],
+    [1.485, 0.04],
+  ],
+);
+
+/** A perna, de cima para baixo: quadril, joelho, tornozelo. */
+const leg = along(
+  (position) => -position[1],
+  ["Hips", "R_Thigh", "R_Shin", "R_Foot"],
+  [
+    [-HIP, 0.1],
+    [-KNEE, 0.1],
+    [-(ANKLE + 0.01), 0.06],
+  ],
+);
+
+/** O braço, medido do ombro para a mão: ombro, cotovelo, pulso. */
+const armBones = along(
+  (position) => (position[0] - shoulder[0]) * armDown[0] + (position[1] - shoulder[1]) * armDown[1],
+  ["Chest", "R_UpperArm", "R_Forearm", "R_Hand"],
+  [
+    [-0.03, 0.05],
+    [UPPER_ARM, 0.08],
+    [UPPER_ARM + FOREARM, 0.04],
+  ],
+);
+
+/** Um ponto do braço, a `distance` metros do ombro. */
+const onArm = (distance) => add(shoulder, scale(armDown, distance));
+
+// ---------------------------------------------------------------- o corpo --
+
+const chin = 1.47;
+
+bind("Head", () => {
+  head({ chin, skin: "skin", lips: "lips", brows: "hair", iris: "iris", lashes: "hair" });
+
+  // O cabelo: a touca que desce em franja até perto das sobrancelhas, a massa
+  // comprida nas costas e uma mecha de cada lado, por cima do ombro.
+  blob("hair", [0, chin + 0.166, -0.019], [0.083, 0.079, 0.106], { around: 28 });
+  loft(
+    "hair",
+    [
+      { p: [0, chin + 0.2, -0.05], rx: 0.07, rz: 0.05 },
+      { p: [0, chin + 0.1, -0.075], rx: 0.088, rz: 0.05 },
+      { p: [0, 1.42, -0.092], rx: 0.096, rz: 0.045 },
+      { p: [0, 1.32, -0.108], rx: 0.09, rz: 0.04 },
+      { p: [0, 1.24, -0.112], rx: 0.07, rz: 0.03 },
+      { p: [0, 1.2, -0.11], rx: 0.03, rz: 0.015 },
+    ],
+    { axis: [0, 1, 0], around: 24 },
+  );
+  bothSides(() =>
+    loft(
+      "hair",
+      [
+        { p: [0.072, chin + 0.16, 0.02], rx: 0.016 },
+        { p: [0.085, chin + 0.06, 0.03], rx: 0.017 },
+        { p: [0.092, 1.43, 0.052], rx: 0.016 },
+        { p: [0.09, 1.36, 0.088], rx: 0.012 },
+        { p: [0.085, 1.3, 0.104], rx: 0.005 },
+      ],
+      { around: 10 },
+    ),
+  );
+});
+
+bind(torso, () => {
+  // Pescoço, e a pele que o colarinho deixa ver.
+  loft("skin", [{ p: [0, 1.4, -0.012], rx: 0.047 }, { p: [0, 1.44, -0.01], rx: 0.044 }, { p: [0, 1.5, -0.004], rx: 0.045 }], { axis: [0, 1, 0] });
+  blob("skin", [0, 1.44, 0.05], [0.022, 0.03, 0.012]);
+
+  // A blusa: presa na cintura, solta no peito, fechando nos ombros.
+  loft(
+    "blouse",
+    [
+      { p: [0, 1.0, 0], rx: 0.15, rzF: 0.1, rzB: 0.106 },
+      { p: [0, 1.085, 0], rx: 0.124, rzF: 0.087, rzB: 0.09 },
+      { p: [0, 1.16, 0], rx: 0.132, rzF: 0.096, rzB: 0.093 },
+      { p: [0, 1.235, 0], rx: 0.143, rzF: 0.106, rzB: 0.097 },
+      { p: [0, 1.29, 0], rx: 0.152, rzF: 0.124, rzB: 0.1 },
+      { p: [0, 1.345, 0], rx: 0.156, rzF: 0.112, rzB: 0.102 },
+      { p: [0, 1.395, 0], rx: 0.154, rzF: 0.094, rzB: 0.098 },
+      { p: [0, 1.43, -0.004], rx: 0.125, rzF: 0.074, rzB: 0.086 },
+      { p: [0, 1.455, -0.008], rx: 0.07, rzF: 0.055, rzB: 0.066 },
+      { p: [0, 1.468, -0.01], rx: 0.05, rzF: 0.048, rzB: 0.054 },
+    ],
+    { axis: [0, 1, 0], square: 2.3, around: 32 },
+  );
+  // O colarinho: uma gola em pé, aberta na frente.
+  loft(
+    "collar",
+    [
+      { p: [0, 1.45, -0.008], rx: 0.06, rzF: 0.057, rzB: 0.062, gap: 0.5 },
+      { p: [0, 1.486, -0.008], rx: 0.058, rzF: 0.056, rzB: 0.061, gap: 0.8 },
+    ],
+    { axis: [0, 1, 0], detail: 2, around: 24, open: true },
+  );
+  // O pingente.
+  blob("metal", [0, 1.4, 0.089], [0.008, 0.011, 0.004]);
+
+  // As alças: da cintura, por cima do ombro, até a cintura atrás.
+  bothSides(() =>
+    loft(
+      "strap",
+      [
+        { p: [0.078, 1.03, 0.089], rx: 0.017, rz: 0.006 },
+        { p: [0.078, 1.16, 0.088], rx: 0.017, rz: 0.006 },
+        { p: [0.078, 1.29, 0.117], rx: 0.017, rz: 0.006 },
+        { p: [0.078, 1.39, 0.092], rx: 0.017, rz: 0.006 },
+        { p: [0.078, 1.434, 0.066], rx: 0.017, rz: 0.006 },
+        { p: [0.078, 1.46, -0.004], rx: 0.017, rz: 0.006 },
+        { p: [0.078, 1.434, -0.078], rx: 0.017, rz: 0.006 },
+        { p: [0.078, 1.39, -0.096], rx: 0.017, rz: 0.006 },
+        { p: [0.078, 1.29, -0.098], rx: 0.017, rz: 0.006 },
+        { p: [0.078, 1.16, -0.088], rx: 0.017, rz: 0.006 },
+        { p: [0.078, 1.03, -0.095], rx: 0.017, rz: 0.006 },
+      ],
+      { around: 8 },
+    ),
+  );
+
+  // A calça no quadril.
+  loft(
+    "trousers",
+    [
+      { p: [0, 0.8, 0], rx: 0.09, rzF: 0.08, rzB: 0.09 },
+      { p: [0, 0.85, 0], rx: 0.158, rzF: 0.1, rzB: 0.115 },
+      { p: [0, 0.93, 0], rx: 0.17, rzF: 0.105, rzB: 0.12 },
+      { p: [0, 1.0, 0], rx: 0.152, rzF: 0.1, rzB: 0.106 },
+    ],
+    { axis: [0, 1, 0], square: 2.3, around: 32 },
+  );
+});
+
+bind("Hips", () => {
+  // O cinto, a fivela e as duas bolsas.
+  loft("belt", [{ p: [0, 0.982, 0], rx: 0.156, rzF: 0.104, rzB: 0.11 }, { p: [0, 1.024, 0], rx: 0.153, rzF: 0.103, rzB: 0.109 }], { axis: [0, 1, 0], square: 2.3, detail: 1, around: 32 });
+  blob("metal", [0, 1.003, 0.104], [0.02, 0.017, 0.006]);
+  bothSides(() => blob("belt", [0.152, 0.945, 0.02], [0.034, 0.046, 0.05]));
+});
+
+bothSides(() => {
+  bind(leg, () => {
+    // A perna: coxa, joelho, panturrilha, até dentro da bota.
+    loft(
+      "trousers",
+      [
+        { p: [0.086, 0.93, 0], rx: 0.084, rzF: 0.09, rzB: 0.098 },
+        { p: [0.09, 0.78, 0.004], rx: 0.079, rzF: 0.083, rzB: 0.085 },
+        { p: [0.092, 0.62, 0.006], rx: 0.066, rzF: 0.068, rzB: 0.068 },
+        { p: [0.092, KNEE, 0.008], rx: 0.056, rzF: 0.059, rzB: 0.056 },
+        { p: [0.093, 0.36, -0.004], rx: 0.053, rzF: 0.048, rzB: 0.062 },
+        { p: [0.094, 0.2, -0.003], rx: 0.043 },
+      ],
+      { around: 20 },
+    );
+    // A joelheira.
+    blob("panel", [0.092, KNEE, 0.052], [0.044, 0.05, 0.022]);
+    // O cano da bota e a dobra em cima dele.
+    loft("boot", [{ p: [0.094, 0.3, -0.003], rx: 0.052 }, { p: [0.094, 0.2, -0.003], rx: 0.05 }, { p: [0.094, 0.07, -0.004], rx: 0.048 }], { around: 16 });
+    loft("panel", [{ p: [0.094, 0.283, -0.003], rx: 0.056 }, { p: [0.094, 0.316, -0.003], rx: 0.056 }], { detail: 1, around: 16 });
+  });
+  // O bolso da coxa.
+  bind("R_Thigh", () => blob("panel", [0.166, 0.72, 0], [0.016, 0.06, 0.05]));
+  // O pé, do calcanhar ao bico.
+  bind("R_Foot", () =>
+    loft(
+      "boot",
+      [
+        { p: [0.095, 0.05, -0.07], rx: 0.034, rz: 0.04 },
+        { p: [0.095, 0.052, -0.03], rx: 0.045, rz: 0.05 },
+        { p: [0.097, 0.047, 0.05], rx: 0.047, rz: 0.045 },
+        { p: [0.099, 0.04, 0.115], rx: 0.043, rz: 0.035 },
+        { p: [0.1, 0.033, 0.158], rx: 0.028, rz: 0.025 },
+      ],
+      { axis: [0, 0, 1], around: 16 },
+    ),
+  );
+
+  bind(armBones, () => {
+    // O braço, de pele, do ombro ao pulso.
+    loft(
+      "skin",
+      [
+        { p: onArm(-0.02), rx: 0.047 },
+        { p: onArm(0.06), rx: 0.046 },
+        { p: onArm(0.15), rx: 0.041 },
+        { p: onArm(UPPER_ARM), rx: 0.035 },
+        { p: onArm(UPPER_ARM + 0.06), rx: 0.036 },
+        { p: onArm(UPPER_ARM + 0.14), rx: 0.031 },
+        { p: onArm(UPPER_ARM + FOREARM), rx: 0.0255 },
+      ],
+      { around: 20 },
+    );
+    // A manga curta da blusa.
+    loft(
+      "blouse",
+      [
+        { p: [0.14, 1.432, -0.006], rx: 0.03 },
+        { p: onArm(0), rx: 0.061 },
+        { p: onArm(0.07), rx: 0.056 },
+        { p: onArm(0.135), rx: 0.052 },
+      ],
+      { around: 20 },
+    );
+  });
+  // A mão, de luva sem dedos.
+  bind("R_Hand", () => hand("skin", wrist, armDown, 0.9, "glove"));
+});
 
 // ------------------------------------------------------------ as animações --
 
@@ -192,7 +316,7 @@ function rotation([x = 0, y = 0, z = 0]) {
   return multiply(about(1, y), multiply(about(0, x), about(2, z)));
 }
 
-/** Os braços saem do arquivo abertos; isto os traz para junto do corpo. */
+/** Os braços são modelados abertos; isto os traz para junto do corpo. */
 const ARMS_IN = 0.2;
 /** No arquivo, o lado "L" é o de x negativo. */
 const SIDES = [
@@ -220,7 +344,7 @@ function idle(t) {
 }
 
 /** Um ciclo de dois passos, no lugar. Corrida e caminhada só mudam nos números. */
-function gait({ leg, knee, arm, elbow, elbowSwing, twist, lean }) {
+function gait({ leg: swing, knee, arm, elbow: bend, elbowSwing, twist, lean }) {
   return (t) => {
     const cycle = t * 2 * Math.PI;
     const pose = {
@@ -231,7 +355,7 @@ function gait({ leg, knee, arm, elbow, elbowSwing, twist, lean }) {
     for (const [side, sign, offset] of SIDES) {
       const phase = cycle + offset;
       // A perna vai à frente quando sin(phase) sobe; o joelho dobra no meio do caminho.
-      const thigh = -leg * Math.sin(phase) - 0.04;
+      const thigh = -swing * Math.sin(phase) - 0.04;
       const shin = 0.08 + knee * ((1 + Math.cos(phase)) / 2) ** 2;
       pose[`${side}_Thigh`] = [thigh, 0, 0];
       pose[`${side}_Shin`] = [shin, 0, 0];
@@ -239,14 +363,14 @@ function gait({ leg, knee, arm, elbow, elbowSwing, twist, lean }) {
       pose[`${side}_Foot`] = [-0.6 * thigh - 0.4 * shin, 0, 0];
       // O braço balança contra a perna do mesmo lado.
       pose[`${side}_UpperArm`] = [arm * Math.sin(phase), 0, sign * ARMS_IN];
-      pose[`${side}_Forearm`] = [-elbow - elbowSwing * (1 - Math.sin(phase)) * 0.5, 0, 0];
+      pose[`${side}_Forearm`] = [-bend - elbowSwing * (1 - Math.sin(phase)) * 0.5, 0, 0];
     }
     return pose;
   };
 }
 
 // As durações casam com a cadência do jogo (game/config/player.ts): 0,85 passo
-// por metro, a 2,4 m/s andando e 3,8 m/s correndo; cada ciclo são dois passos.
+// por metro, a 2,4 m/s andando e 4,4 m/s correndo; cada ciclo são dois passos.
 const CLIPS = [
   { name: "Idle", duration: 6, pose: idle },
   {
@@ -256,122 +380,13 @@ const CLIPS = [
   },
   {
     name: "Run",
-    duration: 0.62,
+    duration: 0.53,
     pose: gait({ leg: 0.68, knee: 1.5, arm: 0.7, elbow: 1.15, elbowSwing: 0.25, twist: 0.1, lean: 0.12 }),
   },
 ];
 
-// ---------------------------------------------------------------- escrita --
-
-const chunks = [];
-let binLength = 0;
-const output = {
-  asset: { version: "2.0", generator: "beyond-the-hill/scripts/models/build-aysha.mjs" },
-  scene: 0,
-  scenes: [{ nodes: [0] }],
-  nodes: [{ name: "Aysha", children: [] }],
-  meshes: [],
-  materials: source.materials,
-  skins: [],
-  animations: [],
-  accessors: [],
-  bufferViews: [],
-  buffers: [],
-};
-
-/** Guarda um bloco de dados e devolve o índice do accessor que o descreve. */
-function addAccessor(array, type, componentType, extra = {}, target) {
-  const bytes = Buffer.from(array.buffer, array.byteOffset, array.byteLength);
-  const padding = (4 - (bytes.length % 4)) % 4;
-  output.bufferViews.push({ buffer: 0, byteOffset: binLength, byteLength: bytes.length, ...(target ? { target } : {}) });
-  chunks.push(bytes, Buffer.alloc(padding));
-  binLength += bytes.length + padding;
-  output.accessors.push({
-    bufferView: output.bufferViews.length - 1,
-    componentType,
-    count: array.length / WIDTHS[type],
-    type,
-    ...extra,
-  });
-  return output.accessors.length - 1;
-}
-
-const FLOAT = 5126;
-const VERTEX_DATA = 34962;
-const INDEX_DATA = 34963;
-
-// Os ossos: sem giro em repouso, cada um na sua junta.
-const boneNode = {};
-for (const bone of BONES) {
-  const parent = PARENTS[bone];
-  const origin = parent ? joints[parent] : [0, 0, 0];
-  boneNode[bone] = output.nodes.length;
-  output.nodes.push({ name: RIG + bone, translation: joints[bone].map((value, axis) => value - origin[axis]) });
-  const parentNode = output.nodes[parent ? boneNode[parent] : 0];
-  (parentNode.children ??= []).push(boneNode[bone]);
-}
-const inverseBind = new Float32Array(BONES.length * 16);
-BONES.forEach((bone, index) => {
-  inverseBind.set([1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -joints[bone][0], -joints[bone][1], -joints[bone][2], 1], index * 16);
-});
-output.skins.push({
-  name: "Aysha_Humanoid_Rig",
-  joints: BONES.map((bone) => boneNode[bone]),
-  skeleton: boneNode.Root,
-  inverseBindMatrices: addAccessor(inverseBind, "MAT4", FLOAT),
-});
-
-// As malhas: uma por material, com todas as peças daquele material dentro.
-let triangles = 0;
-source.materials.forEach((material, materialIndex) => {
-  const own = pieces.filter((piece) => piece.material === materialIndex);
-  if (own.length === 0) return;
-  const vertexCount = own.reduce((sum, piece) => sum + piece.positions.length, 0);
-  const positions = new Float32Array(vertexCount * 3);
-  const skinIndex = new Uint8Array(vertexCount * 4);
-  const skinWeight = new Uint8Array(vertexCount * 4);
-  const indices = [];
-  const min = [Infinity, Infinity, Infinity];
-  const max = [-Infinity, -Infinity, -Infinity];
-  let vertex = 0;
-  for (const piece of own) {
-    for (const index of piece.indices) indices.push(vertex + index);
-    for (const position of piece.positions) {
-      positions.set(position, vertex * 3);
-      skinIndex[vertex * 4] = BONES.indexOf(piece.bone);
-      skinWeight[vertex * 4] = 255;
-      for (let axis = 0; axis < 3; axis++) {
-        // Os limites são conferidos contra o que foi gravado, em 32 bits.
-        const stored = positions[vertex * 3 + axis];
-        min[axis] = Math.min(min[axis], stored);
-        max[axis] = Math.max(max[axis], stored);
-      }
-      vertex++;
-    }
-  }
-  triangles += indices.length / 3;
-
-  const wide = vertexCount > 65535;
-  output.meshes.push({
-    name: material.name,
-    primitives: [
-      {
-        attributes: {
-          POSITION: addAccessor(positions, "VEC3", FLOAT, { min, max }, VERTEX_DATA),
-          JOINTS_0: addAccessor(skinIndex, "VEC4", 5121, {}, VERTEX_DATA),
-          WEIGHTS_0: addAccessor(skinWeight, "VEC4", 5121, { normalized: true }, VERTEX_DATA),
-        },
-        indices: addAccessor(wide ? new Uint32Array(indices) : new Uint16Array(indices), "SCALAR", wide ? 5125 : 5123, {}, INDEX_DATA),
-        material: materialIndex,
-      },
-    ],
-  });
-  output.nodes[0].children.push(output.nodes.length);
-  output.nodes.push({ name: material.name, mesh: output.meshes.length - 1, skin: 0 });
-});
-
-// Os clipes: um giro por osso, amostrado; o último quadro repete o primeiro.
-for (const clip of CLIPS) {
+/** Um clipe amostrado: um giro por osso em cada quadro; o último quadro repete o primeiro. */
+function sample(clip) {
   const frames = Math.round(clip.duration * FRAME_RATE);
   const times = new Float32Array(frames + 1);
   const tracks = {};
@@ -382,32 +397,31 @@ for (const clip of CLIPS) {
       (tracks[bone] ??= new Float32Array((frames + 1) * 4)).set(rotation(angles), frame * 4);
     }
   }
-  const input = addAccessor(times, "SCALAR", FLOAT, { min: [0], max: [times[frames]] });
-  const animation = { name: clip.name, samplers: [], channels: [] };
-  for (const [bone, values] of Object.entries(tracks)) {
-    animation.channels.push({ sampler: animation.samplers.length, target: { node: boneNode[bone], path: "rotation" } });
-    animation.samplers.push({ input, output: addAccessor(values, "VEC4", FLOAT), interpolation: "LINEAR" });
-  }
-  output.animations.push(animation);
+  return { name: clip.name, times, tracks };
 }
 
-output.buffers.push({ byteLength: binLength });
-let json = Buffer.from(JSON.stringify(output), "utf8");
-json = Buffer.concat([json, Buffer.alloc((4 - (json.length % 4)) % 4, " ")]);
-const header = Buffer.alloc(12);
-header.writeUInt32LE(0x46546c67, 0);
-header.writeUInt32LE(2, 4);
-header.writeUInt32LE(12 + 8 + json.length + 8 + binLength, 8);
-const chunkHeader = (length, type) => {
-  const buffer = Buffer.alloc(8);
-  buffer.writeUInt32LE(length, 0);
-  buffer.writeUInt32LE(type, 4);
-  return buffer;
-};
-const glb = Buffer.concat([header, chunkHeader(json.length, 0x4e4f534a), json, chunkHeader(binLength, 0x004e4942), ...chunks]);
-writeFileSync(TARGET, glb);
+// ---------------------------------------------------------------- escrita --
 
-console.log(
-  `${TARGET}\n  ${pieces.length} peças em ${output.meshes.length} malhas, ${triangles} triângulos, ${BONES.length} ossos, ` +
-    `clipes ${CLIPS.map((clip) => clip.name).join(", ")} — ${(glb.length / 1024).toFixed(0)} kB`,
-);
+writeFigure({
+  title: "Aysha",
+  target: TARGET,
+  generator: "beyond-the-hill/scripts/models/build-aysha.mjs",
+  materials: {
+    skin: { hex: "#d9b29e", roughness: 0.75 },
+    lips: { hex: "#ac6f6c", roughness: 0.6 },
+    eye: { hex: "#ece6dc", roughness: 0.5 },
+    iris: { hex: "#3a2618", roughness: 0.5 },
+    hair: { hex: "#4a342c", roughness: 0.75 },
+    blouse: { hex: "#e6e1d4", roughness: 0.8 },
+    // A gola é uma casca: por dentro também se vê.
+    collar: { hex: "#e6e1d4", roughness: 0.8, doubleSided: true },
+    strap: { hex: "#2f2f33", roughness: 0.7 },
+    belt: { hex: "#6f553d", roughness: 0.65 },
+    metal: { hex: "#b2aea2", roughness: 0.4 },
+    trousers: { hex: "#36363b", roughness: 0.85 },
+    panel: { hex: "#4e4b4b", roughness: 0.8 },
+    boot: { hex: "#37322e", roughness: 0.65 },
+    glove: { hex: "#2a2a2e", roughness: 0.7 },
+  },
+  rig: { prefix: "Aysha_Rig_", bones: BONES, clips: CLIPS.map(sample) },
+});
